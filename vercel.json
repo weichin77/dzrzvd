@@ -3,6 +3,10 @@
   "regions": ["sin1"],
   "crons": [
     {
+      "path": "/api/cron/supabase-health",
+      "schedule": "17 6 * * *"
+    },
+    {
       "path": "/api/cron/shopee-sync",
       "schedule": "0 18 * * *"
     }

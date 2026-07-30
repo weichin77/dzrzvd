@@ -29,6 +29,7 @@ npm run build
 The catalog implementation uses:
 
 - Vercel Functions and a protected daily Cron route
+- A separate protected daily Supabase database health check
 - Supabase Postgres through its transaction pooler
 - Supabase Auth for the invite-only operator interface
 - Shopee Open Platform Shop, Product, and Public APIs
@@ -48,6 +49,10 @@ types and queries.
 The application intentionally renders a setup state at `/products` when
 Supabase has not been configured, so builds and existing public pages remain
 available before platform provisioning is complete.
+
+Vercel calls `/api/cron/supabase-health` daily at 06:17 UTC (14:17
+Asia/Taipei). It performs a minimal server-only Postgres query and requires the
+same `CRON_SECRET` Bearer authorization as the Shopee synchronization route.
 
 Run the full verification suite with:
 

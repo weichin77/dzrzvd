@@ -8,10 +8,11 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("configures the once-daily Taipei sync and Singapore function region", async () => {
+test("configures spaced daily Supabase and Shopee jobs in Singapore", async () => {
   const config = JSON.parse(await source("vercel.json"));
   assert.deepEqual(config.regions, ["sin1"]);
   assert.deepEqual(config.crons, [
+    { path: "/api/cron/supabase-health", schedule: "17 6 * * *" },
     { path: "/api/cron/shopee-sync", schedule: "0 18 * * *" },
   ]);
 });
@@ -64,6 +65,17 @@ test("cron rejects unauthorized requests before synchronization", async () => {
   const syncCall = cron.indexOf("await runShopeeSync");
   assert.ok(authCheck >= 0);
   assert.ok(syncCall > authCheck);
+});
+
+test("Supabase health cron authenticates before querying Postgres", async () => {
+  const cron = await source("app/api/cron/supabase-health/route.ts");
+  const authCheck = cron.indexOf(
+    'request.headers.get("authorization") !== expectedAuthorization',
+  );
+  const healthQuery = cron.indexOf("select 1 as health_check");
+  assert.ok(authCheck >= 0);
+  assert.ok(healthQuery > authCheck);
+  assert.match(cron, /Cache-Control.*no-store/s);
 });
 
 test("environment template contains names and placeholders, not secret values", async () => {
