@@ -57,6 +57,66 @@ test("product cards visibly contain only image and shortened title", async () =>
   assert.match(styles, /-webkit-line-clamp:\s*2/);
 });
 
+test("application typography stays within a three-to-one size range", async () => {
+  const files = [
+    "app/globals.css",
+    "app/products/catalog.module.css",
+    "app/admin/login/login.module.css",
+    "app/admin/shopee-catalog/admin.module.css",
+  ];
+  const stylesheets = await Promise.all(files.map(source));
+  const combined = stylesheets.join("\n");
+  const globalStyles = stylesheets[0];
+  const tokens = new Map();
+
+  for (const match of globalStyles.matchAll(
+    /--(font-[\w-]+):\s*([\d.]+)(px|rem)\s*;/g,
+  )) {
+    const [, name, rawValue, unit] = match;
+    const pixels = Number(rawValue) * (unit === "rem" ? 16 : 1);
+    tokens.set(name, pixels);
+  }
+
+  assert.deepEqual(
+    Object.fromEntries(tokens),
+    {
+      "font-xs": 14,
+      "font-sm": 16,
+      "font-body": 18,
+      "font-lg": 22,
+      "font-xl": 28,
+      "font-2xl": 34,
+      "font-display": 42,
+    },
+  );
+
+  const measuredSizes = [...tokens.values()];
+
+  for (const match of combined.matchAll(/font-size\s*:\s*([^;]+);/g)) {
+    const declaration = match[1].trim();
+
+    if (declaration.includes("vw")) {
+      assert.match(declaration, /^clamp\(/);
+    }
+
+    for (const reference of declaration.matchAll(/var\(--(font-[\w-]+)\)/g)) {
+      assert.ok(tokens.has(reference[1]), `Unknown type token: ${reference[1]}`);
+    }
+
+    for (const size of declaration.matchAll(/([\d.]+)(px|rem)/g)) {
+      const pixels = Number(size[1]) * (size[2] === "rem" ? 16 : 1);
+      measuredSizes.push(pixels);
+    }
+  }
+
+  const smallest = Math.min(...measuredSizes);
+  const largest = Math.max(...measuredSizes);
+
+  assert.equal(smallest, 14);
+  assert.equal(largest, 42);
+  assert.ok(largest / smallest <= 3);
+});
+
 test("cron rejects unauthorized requests before synchronization", async () => {
   const cron = await source("app/api/cron/shopee-sync/route.ts");
   const authCheck = cron.indexOf(

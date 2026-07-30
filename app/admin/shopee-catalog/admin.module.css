@@ -18,7 +18,7 @@
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(42px, 7vw, 78px);
+  font-size: clamp(var(--font-2xl), 6vw, var(--font-display));
   letter-spacing: -0.06em;
 }
 
@@ -31,7 +31,7 @@
 .cardLabel {
   margin: 0 0 12px;
   color: #738071;
-  font-size: 11px;
+  font-size: var(--font-xs);
   font-weight: 800;
   letter-spacing: 0.2em;
 }
@@ -82,7 +82,7 @@
 
 .card dt {
   color: #6a746c;
-  font-size: 12px;
+  font-size: var(--font-xs);
 }
 
 .card dd {
@@ -126,7 +126,7 @@
 .overrideForm label {
   display: grid;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 800;
 }
 
@@ -160,7 +160,7 @@
   border: 1px solid #18221b;
   padding: 11px 18px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: 800;
   cursor: pointer;
 }
