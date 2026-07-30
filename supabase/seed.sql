@@ -1,0 +1,6 @@
+-- Non-production seed data only.
+-- Add an invited Supabase Auth user's UUID manually before using the admin UI:
+--
+-- insert into app_private.app_admin (user_id)
+-- values ('00000000-0000-0000-0000-000000000000')
+-- on conflict (user_id) do update set active = true;

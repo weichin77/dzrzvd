@@ -1,0 +1,1475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DZRZVD Shopee Catalog — Product Specifications</title>
+  <style>
+    :root {
+      --night: #101a14;
+      --ink: #18251d;
+      --green: #1d4b34;
+      --green-2: #357054;
+      --lime: #c7dc72;
+      --sage: #dce9d8;
+      --paper: #fbfaf5;
+      --cream: #f3eddc;
+      --coral: #f1714d;
+      --blue: #4f82b7;
+      --violet: #7865a9;
+      --yellow: #e4b941;
+      --red: #b94e4c;
+      --line: rgba(24, 37, 29, .17);
+      --shadow: 0 20px 60px rgba(16, 35, 24, .12);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 0, rgba(199, 220, 114, .24), transparent 28rem),
+        radial-gradient(circle at 90% 24rem, rgba(79, 130, 183, .12), transparent 32rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.62;
+    }
+    a { color: var(--green-2); }
+    code {
+      padding: .12rem .35rem;
+      color: #16442d;
+      background: #e5efe1;
+      border-radius: 5px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .9em;
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      color: white;
+      background: var(--night);
+      border-bottom: 9px solid var(--lime);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 460px;
+      height: 460px;
+      right: -120px;
+      top: -130px;
+      background: var(--coral);
+      border-radius: 46% 54% 67% 33% / 53% 33% 67% 47%;
+      opacity: .9;
+      transform: rotate(20deg);
+    }
+    .hero::after {
+      content: "商品系列";
+      position: absolute;
+      right: 34px;
+      bottom: 2px;
+      color: rgba(255,255,255,.07);
+      font-size: clamp(5rem, 13vw, 12rem);
+      font-weight: 900;
+      letter-spacing: -.08em;
+      white-space: nowrap;
+    }
+    .wrap {
+      width: min(1380px, calc(100% - 40px));
+      margin-inline: auto;
+    }
+    .hero .wrap {
+      position: relative;
+      z-index: 1;
+      padding: 70px 0 64px;
+    }
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--coral);
+      font-size: .75rem;
+      font-weight: 900;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .hero .eyebrow { color: var(--lime); }
+    h1 {
+      max-width: 980px;
+      margin: 0;
+      font-size: clamp(2.8rem, 7vw, 6rem);
+      line-height: .96;
+      letter-spacing: -.06em;
+    }
+    .hero p {
+      max-width: 760px;
+      margin: 26px 0 0;
+      color: rgba(255,255,255,.78);
+      font-size: 1.08rem;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 28px;
+    }
+    .badge {
+      padding: 7px 11px;
+      color: var(--night);
+      background: var(--lime);
+      border-radius: 999px;
+      font-size: .77rem;
+      font-weight: 900;
+    }
+    .badge.alt { background: #dce9d8; }
+    .page {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 32px;
+      padding: 34px 0 90px;
+    }
+    .toc {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      padding: 22px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .toc strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--green);
+      font-size: .74rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .toc a {
+      display: block;
+      padding: 7px 0 7px 11px;
+      color: #516057;
+      border-left: 2px solid #dbe4d7;
+      text-decoration: none;
+      font-size: .85rem;
+    }
+    .toc a:hover { color: var(--coral); border-color: var(--coral); }
+    main { min-width: 0; }
+    section {
+      scroll-margin-top: 20px;
+      margin-bottom: 25px;
+      padding: clamp(25px, 4vw, 44px);
+      background: rgba(255,255,255,.94);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    h2 {
+      margin: 0 0 18px;
+      color: var(--green);
+      font-size: clamp(1.8rem, 3vw, 2.75rem);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+    h3 {
+      margin: 28px 0 10px;
+      color: var(--green-2);
+      font-size: 1.25rem;
+    }
+    h4 { margin: 18px 0 6px; }
+    p { margin: .65rem 0 1rem; }
+    ul, ol { padding-left: 1.3rem; }
+    li + li { margin-top: .42rem; }
+    .lead {
+      max-width: 940px;
+      color: #455349;
+      font-size: 1.08rem;
+    }
+    .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      gap: 16px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      padding: 20px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 15px;
+    }
+    .card h3, .card h4 { margin-top: 0; }
+    .icon {
+      display: inline-grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      margin-bottom: 14px;
+      color: white;
+      background: var(--coral);
+      border-radius: 12px;
+      font-weight: 900;
+    }
+    .card:nth-child(2) .icon { background: var(--blue); }
+    .card:nth-child(3) .icon { background: var(--violet); }
+    .card:nth-child(4) .icon { background: var(--green-2); }
+    .callout {
+      margin: 20px 0;
+      padding: 18px 20px;
+      background: #ebf5e7;
+      border-left: 5px solid var(--green-2);
+      border-radius: 0 12px 12px 0;
+    }
+    .callout.warning { background: #fff3da; border-color: var(--yellow); }
+    .callout.coral { background: #fae9e4; border-color: var(--coral); }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .table-wrap { overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td {
+      padding: 12px 13px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: white;
+      background: var(--green);
+      font-size: .73rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    tr:nth-child(even) td { background: #f9f7f0; }
+    .priority, .state {
+      display: inline-block;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: .71rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .must { color: white; background: var(--coral); }
+    .should { color: white; background: var(--blue); }
+    .could { color: #493912; background: #f0d77c; }
+    .later { color: white; background: var(--violet); }
+    .state { color: white; background: var(--green-2); }
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(110px, 1fr));
+      gap: 22px;
+      margin: 24px 0;
+    }
+    .journey div {
+      position: relative;
+      min-height: 116px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px;
+      color: white;
+      background: var(--green);
+      border-radius: 16px;
+      text-align: center;
+      font-weight: 800;
+    }
+    .journey div:nth-child(2) { background: var(--coral); }
+    .journey div:nth-child(3) { background: var(--violet); }
+    .journey div:nth-child(4) { background: var(--blue); }
+    .journey div:nth-child(5) { background: var(--green-2); }
+    .journey div:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -22px;
+      color: var(--ink);
+      font-size: 1.5rem;
+    }
+    .journey small {
+      display: block;
+      margin-top: 5px;
+      color: rgba(255,255,255,.76);
+      font-weight: 500;
+    }
+    .wireframe {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+    .screen {
+      overflow: hidden;
+      background: #f8f5eb;
+      border: 2px solid var(--night);
+      border-radius: 18px;
+      box-shadow: 8px 8px 0 var(--sage);
+    }
+    .screen-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 13px;
+      background: var(--night);
+    }
+    .screen-head span {
+      width: 8px;
+      height: 8px;
+      background: var(--coral);
+      border-radius: 50%;
+    }
+    .screen-head span:nth-child(2) { background: var(--yellow); }
+    .screen-head span:nth-child(3) { background: var(--lime); }
+    .screen-body { padding: 16px; }
+    .mock-nav {
+      height: 28px;
+      margin-bottom: 12px;
+      background: var(--green);
+      border-radius: 5px;
+    }
+    .mock-hero {
+      display: grid;
+      height: 120px;
+      place-items: center;
+      margin-bottom: 12px;
+      color: white;
+      background: linear-gradient(135deg, var(--green), var(--green-2));
+      border-radius: 8px;
+      font-weight: 900;
+    }
+    .mock-filters {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .mock-filters i {
+      display: block;
+      width: 55px;
+      height: 16px;
+      background: var(--sage);
+      border-radius: 999px;
+    }
+    .mock-filters i:first-child { background: var(--coral); }
+    .mock-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .mock-card {
+      min-height: 110px;
+      padding: 6px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+    .mock-card::before {
+      content: "";
+      display: block;
+      height: 62px;
+      margin-bottom: 7px;
+      background: #ccd8c7;
+      border-radius: 4px;
+    }
+    .mock-card::after {
+      content: "";
+      display: block;
+      width: 70%;
+      height: 6px;
+      background: #758179;
+      border-radius: 2px;
+      box-shadow: 0 10px 0 #d6d8d4;
+    }
+    .mobile {
+      max-width: 290px;
+      margin-inline: auto;
+    }
+    .mobile .mock-grid { grid-template-columns: repeat(2, 1fr); }
+    .mobile .mock-card { min-height: 100px; }
+    .small { font-size: .86rem; }
+    .muted { color: #667169; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 28px; }
+    .checklist li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--green-2);
+      font-weight: 900;
+    }
+    .metric {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--coral);
+      font-size: 1.85rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+    footer {
+      color: #dce9de;
+      background: var(--night);
+    }
+    footer .wrap { padding: 34px 0; font-size: .86rem; }
+    @media (max-width: 1080px) {
+      .page { grid-template-columns: 1fr; }
+      .toc { position: static; max-height: none; columns: 2; }
+      .toc strong { column-span: all; }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .journey { grid-template-columns: 1fr; }
+      .journey div:not(:last-child)::after {
+        content: "↓";
+        right: auto;
+        bottom: -25px;
+      }
+    }
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 24px, 1380px); }
+      .hero .wrap { padding: 48px 0; }
+      section { padding: 24px 18px; border-radius: 16px; }
+      .toc { columns: 1; }
+      .grid-2, .grid-3, .grid-4, .wireframe { grid-template-columns: 1fr; }
+      .mock-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media print {
+      body { background: white; font-size: 10.5pt; }
+      .page { display: block; width: 100%; padding: 14px; }
+      .toc { display: none; }
+      section { break-inside: avoid-page; box-shadow: none; margin-bottom: 12px; }
+      .hero { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Product requirements document · PRD</p>
+      <h1>DZRZVD Shopee<br>Catalog Experience</h1>
+      <p>
+        Product specifications for a categorized, automatically refreshed DZRZVD
+        storefront that helps visitors discover products on dzrzvd.com.tw and complete
+        their purchase on Shopee.
+      </p>
+      <div class="badges">
+        <span class="badge">MVP specification</span>
+        <span class="badge alt">Version 1.2</span>
+        <span class="badge alt">2026-07-30</span>
+        <span class="badge alt">Platform: Vercel + Supabase</span>
+        <span class="badge alt">Shopee API verified 2026-07-29</span>
+        <span class="badge alt">Platform docs verified 2026-07-30</span>
+        <span class="badge alt">Owner approval required before build</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap page">
+    <aside class="toc" aria-label="Table of contents">
+      <strong>Contents</strong>
+      <a href="#vision">1. Product vision</a>
+      <a href="#problem">2. Problem</a>
+      <a href="#users">3. Users</a>
+      <a href="#journeys">4. User journeys</a>
+      <a href="#scope">5. Scope</a>
+      <a href="#requirements">6. Functional requirements</a>
+      <a href="#information">7. Information architecture</a>
+      <a href="#screens">8. Screens and layout</a>
+      <a href="#cards">9. Product cards</a>
+      <a href="#states">10. States and errors</a>
+      <a href="#admin">11. Operator experience</a>
+      <a href="#content">12. Content rules</a>
+      <a href="#accessibility">13. Accessibility</a>
+      <a href="#responsive">14. Responsive behavior</a>
+      <a href="#seo">15. SEO and performance</a>
+      <a href="#analytics">16. Analytics</a>
+      <a href="#nonfunctional">17. Non-functional requirements</a>
+      <a href="#acceptance">18. Acceptance criteria</a>
+      <a href="#release">19. Release plan</a>
+      <a href="#integration">20. Platform and verified API contract</a>
+      <a href="#questions">21. Confirmed decisions</a>
+    </aside>
+
+    <main>
+      <section id="vision">
+        <p class="eyebrow">01 / North star</p>
+        <h2>Product vision</h2>
+        <p class="lead">
+          Make dzrzvd.com.tw the clearest branded way to discover DZRZVD products while
+          keeping Shopee as the transactional destination. The experience should feel curated,
+          current, and trustworthy—not like a generic embedded marketplace feed.
+        </p>
+        <div class="grid-4">
+          <div class="card">
+            <span class="icon">01</span>
+            <h3>Discoverable</h3>
+            <p>Visitors quickly understand which product groups exist and find relevant items.</p>
+          </div>
+          <div class="card">
+            <span class="icon">02</span>
+            <h3>Current</h3>
+            <p>Only active, confirmed in-stock products appear; source status and category placement refresh daily.</p>
+          </div>
+          <div class="card">
+            <span class="icon">03</span>
+            <h3>Branded</h3>
+            <p>The catalog belongs visually to DZRZVD, not to an unstyled data feed.</p>
+          </div>
+          <div class="card">
+            <span class="icon">04</span>
+            <h3>Honest</h3>
+            <p>Visitors know that product details and checkout continue on Shopee.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Product promise</strong>
+          “Explore the latest DZRZVD collection by product category, then purchase through the
+          official kuSport Shopee shop.”
+        </div>
+      </section>
+
+      <section id="problem">
+        <p class="eyebrow">02 / Why this exists</p>
+        <h2>Problem statement</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Visitor problem</h3>
+            <ul>
+              <li>The DZRZVD website currently presents broad collections but not a current item-level catalog.</li>
+              <li>The kuSport Shopee shop contains multiple brands, so visitors must distinguish DZRZVD products themselves.</li>
+              <li>Marketplace layouts prioritize commerce breadth, not DZRZVD's brand story or taxonomy.</li>
+              <li>Static links become stale when products or collections change.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Business problem</h3>
+            <ul>
+              <li>Manual website catalog maintenance duplicates seller work.</li>
+              <li>Brand traffic can leak into unrelated products inside a mixed-brand store.</li>
+              <li>There is no owned catalog surface for category-level SEO and campaign links.</li>
+              <li>There is no reliable view of whether the public brand site reflects the active DZRZVD assortment.</li>
+            </ul>
+          </div>
+        </div>
+        <h3>Product hypothesis</h3>
+        <p>
+          If DZRZVD automatically publishes its active Shopee products into a branded,
+          category-organized catalog, visitors will find suitable items with less effort and
+          generate more qualified outbound visits to Shopee, without increasing recurring
+          merchandising work.
+        </p>
+      </section>
+
+      <section id="users">
+        <p class="eyebrow">03 / Audience</p>
+        <h2>Users and jobs to be done</h2>
+        <div class="grid-3">
+          <div class="card">
+            <span class="icon">A</span>
+            <h3>Outdoor apparel shopper</h3>
+            <p><strong>Job:</strong> “Help me browse DZRZVD products by type and see what is currently available.”</p>
+            <ul>
+              <li>May arrive from search, social media, or a campaign.</li>
+              <li>Needs clear product grouping and visual comparison.</li>
+              <li>Expects every visible card to represent an active, in-stock listing.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <span class="icon">B</span>
+            <h3>Brand-aware returning visitor</h3>
+            <p><strong>Job:</strong> “Show me what is new or still available from DZRZVD.”</p>
+            <ul>
+              <li>Recognizes product codes or styles.</li>
+              <li>Wants a fast path from brand site to Shopee listing.</li>
+              <li>May compare men's, women's, seasonal, or functional categories.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <span class="icon">C</span>
+            <h3>Catalog operator</h3>
+            <p><strong>Job:</strong> “Keep the public catalog accurate without manually copying every listing.”</p>
+            <ul>
+              <li>Needs understandable sync outcomes and safe recovery.</li>
+              <li>Needs to include or exclude an exceptional product.</li>
+              <li>Needs confidence that other kuSport brands will not appear.</li>
+            </ul>
+          </div>
+        </div>
+        <h3>Secondary stakeholders</h3>
+        <ul>
+          <li>Brand/marketing owner reviewing presentation, labels, and campaigns.</li>
+          <li>Developer maintaining the Shopee integration and deployment.</li>
+          <li>Search engines consuming server-rendered category content.</li>
+          <li>Shopee as the external source and transaction platform.</li>
+        </ul>
+      </section>
+
+      <section id="journeys">
+        <p class="eyebrow">04 / Flows</p>
+        <h2>Primary user journeys</h2>
+        <h3>Visitor discovery journey</h3>
+        <div class="journey">
+          <div>Arrive<small>Home, search, social, campaign</small></div>
+          <div>Open 商品系列<small>Understand the catalog</small></div>
+          <div>Select category<small>Reduce the product set</small></div>
+          <div>Scan products<small>Original image and shortened title</small></div>
+          <div>Continue to Shopee<small>Product detail and purchase</small></div>
+        </div>
+        <h3>Operator synchronization journey</h3>
+        <div class="journey">
+          <div>Scheduled trigger<small>Daily or chosen frequency</small></div>
+          <div>Fetch and classify<small>Official API + DZRZVD rules</small></div>
+          <div>Review result<small>Counts, warnings, timestamp</small></div>
+          <div>Correct exception<small>Include/exclude override</small></div>
+          <div>Republish safely<small>Cached catalog revalidated</small></div>
+        </div>
+        <h3>Key journey requirements</h3>
+        <ul>
+          <li>A visitor should reach a Shopee product in no more than three intentional interactions from the catalog entry.</li>
+          <li>Category selection must not reset scroll or context unexpectedly.</li>
+          <li>The outbound action must clearly state that it opens Shopee.</li>
+          <li>An operator must be able to identify the last successful sync without reading raw logs.</li>
+          <li>An exceptional inclusion/exclusion must be possible without changing source Shopee data.</li>
+        </ul>
+      </section>
+
+      <section id="scope">
+        <p class="eyebrow">05 / Release boundaries</p>
+        <h2>MVP scope and prioritization</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Priority</th><th>Capability</th><th>Release</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><span class="priority must">Must</span></td><td>Authorized Shopee product synchronization</td><td>MVP</td><td>Primary source of truth.</td></tr>
+              <tr><td><span class="priority must">Must</span></td><td>Strict DZRZVD title-token filtering</td><td>MVP</td><td>Includes titles containing DZRZVD or 杜戛地.</td></tr>
+              <tr><td><span class="priority must">Must</span></td><td>Marketplace category grouping</td><td>MVP</td><td>Default interpretation of product categories.</td></tr>
+              <tr><td><span class="priority must">Must</span></td><td>Four-column desktop and two-column mobile card grid</td><td>MVP</td><td>Image/title-only cards link directly to Shopee.</td></tr>
+              <tr><td><span class="priority must">Must</span></td><td>Last-updated and safe stale-data behavior</td><td>MVP</td><td>Trust and resilience.</td></tr>
+              <tr><td><span class="priority must">Must</span></td><td>Scheduled sync and manual recovery</td><td>MVP</td><td>Operational viability.</td></tr>
+              <tr><td><span class="priority should">Should</span></td><td>Curated category labels and sort order</td><td>MVP if time permits</td><td>Separates taxonomy from merchandising.</td></tr>
+              <tr><td><span class="priority should">Should</span></td><td>Manual title-classification include/exclude controls</td><td>MVP</td><td>Cannot bypass active-status or confirmed-stock gates.</td></tr>
+              <tr><td><span class="priority must">Must</span></td><td>Shareable separate category URLs</td><td>MVP</td><td>Required alongside the overview sections.</td></tr>
+              <tr><td><span class="priority later">Later</span></td><td>Custom Shopee shop-category mode</td><td>Future decision</td><td>Not implemented in this release.</td></tr>
+              <tr><td><span class="priority could">Could</span></td><td>New-arrival badges</td><td>1.1</td><td>Requires a clear age definition.</td></tr>
+              <tr><td><span class="priority must">Must</span></td><td>Simple protected operator page</td><td>MVP</td><td>Sync status, manual actions, and audited overrides.</td></tr>
+              <tr><td><span class="priority later">Later</span></td><td>Wishlist, alerts, or accounts</td><td>Future</td><td>Not required for discovery-to-Shopee funnel.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warning">
+          <strong>Explicitly outside scope</strong>
+          Local checkout, cart, payments, order synchronization, buyer data, inventory writes,
+          price writes, marketplace-wide search, automated copy generation, non-category filters,
+          and any modification to existing pages or shared existing components.
+        </div>
+      </section>
+
+      <section id="requirements">
+        <p class="eyebrow">06 / Behavior</p>
+        <h2>Functional requirements</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Acceptance summary</th></tr></thead>
+            <tbody>
+              <tr><td>FR-001</td><td>The system shall retrieve products only from the authorized kuSport shop.</td><td><span class="priority must">Must</span></td><td>Shop ID is fixed and verified during authorization.</td></tr>
+              <tr><td>FR-002</td><td>The system shall classify a product as DZRZVD when its normalized title/name contains <code>DZRZVD</code> or <code>杜戛地</code>, unless an audited override applies.</td><td><span class="priority must">Must</span></td><td>Every record stores a match method.</td></tr>
+              <tr><td>FR-003</td><td>The public catalog shall display only products approved as DZRZVD.</td><td><span class="priority must">Must</span></td><td>Known other brands and manual exclusions never render.</td></tr>
+              <tr><td>FR-004</td><td>The system shall associate products with Shopee category IDs and names.</td><td><span class="priority must">Must</span></td><td>Visible items have a category breadcrumb or explicit Other fallback.</td></tr>
+              <tr><td>FR-005</td><td>The catalog shall expose marketplace-category overview sections and separate category pages.</td><td><span class="priority must">Must</span></td><td><code>/products</code> provides overviews and every visible category has a stable URL.</td></tr>
+              <tr><td>FR-006</td><td>The complete product card shall link to the corresponding Shopee listing in a new tab.</td><td><span class="priority must">Must</span></td><td>Valid HTTPS URL, safe rel attributes, accessible external-link name.</td></tr>
+              <tr><td>FR-007</td><td>Product cards shall visibly display only the original Shopee listing image and a shortened title.</td><td><span class="priority must">Must</span></td><td>No price, stock label, SKU, badge, category, or separate CTA text.</td></tr>
+              <tr><td>FR-008</td><td>The public catalog shall hide every out-of-stock or unknown-stock product.</td><td><span class="priority must">Must</span></td><td>Public queries require confirmed stock greater than zero.</td></tr>
+              <tr><td>FR-009</td><td>The website shall show the last successful update time.</td><td><span class="priority must">Must</span></td><td>Traditional Chinese, Asia/Taipei formatting.</td></tr>
+              <tr><td>FR-010</td><td>The public catalog shall continue to render when a new sync fails.</td><td><span class="priority must">Must</span></td><td>Last valid data remains; internal error details are hidden.</td></tr>
+              <tr><td>FR-011</td><td>A protected operator shall be able to trigger a dry run and full sync.</td><td><span class="priority must">Must</span></td><td>Unauthorized callers are rejected.</td></tr>
+              <tr><td>FR-012</td><td>A protected operator shall be able to override title-based DZRZVD classification for an item.</td><td><span class="priority should">Should</span></td><td>Override records a reason but cannot bypass active-status or confirmed-stock gates.</td></tr>
+              <tr><td>FR-013</td><td>Category presentation may override label, description, visibility, and order without changing source taxonomy.</td><td><span class="priority should">Should</span></td><td>Source identity remains intact.</td></tr>
+              <tr><td>FR-014</td><td>The system shall use a local image placeholder when a product image is absent or fails.</td><td><span class="priority must">Must</span></td><td>No broken image layout.</td></tr>
+              <tr><td>FR-015</td><td>Product and category pages shall be server-rendered.</td><td><span class="priority must">Must</span></td><td>Names/headings exist in initial HTML.</td></tr>
+              <tr><td>FR-016</td><td>No visitor request shall call Shopee synchronously.</td><td><span class="priority must">Must</span></td><td>Catalog reads database/cache only.</td></tr>
+              <tr><td>FR-017</td><td>The system shall soft-deactivate missing products after a complete scan.</td><td><span class="priority must">Must</span></td><td>Partial failures do not remove products.</td></tr>
+              <tr><td>FR-018</td><td>Repeated synchronization shall not create duplicates.</td><td><span class="priority must">Must</span></td><td>Shopee item ID is the stable key.</td></tr>
+              <tr><td>FR-019</td><td>The public catalog shall show only products with Shopee status <code>NORMAL</code> and no inactive timestamp.</td><td><span class="priority must">Must</span></td><td>Unlisted, reviewing, banned, and deleted products are hidden.</td></tr>
+              <tr><td>FR-020</td><td>The product grid shall use four cards per desktop row and two compact cards per mobile row.</td><td><span class="priority must">Must</span></td><td>Verified at agreed breakpoints.</td></tr>
+              <tr><td>FR-021</td><td>Category shall be the only visitor filter.</td><td><span class="priority must">Must</span></td><td>No price, gender, season, stock, or keyword filters.</td></tr>
+              <tr><td>FR-022</td><td>The implementation shall add only new catalog/admin routes and shall not modify existing pages or shared existing components.</td><td><span class="priority must">Must</span></td><td>Existing files remain byte-for-byte unchanged.</td></tr>
+              <tr><td>FR-023</td><td>A simple protected admin page shall show synchronization status and manage audited product overrides.</td><td><span class="priority must">Must</span></td><td>Single-operator authentication; no public signup.</td></tr>
+              <tr><td>FR-024</td><td>The system shall use Shopee's current seller authorization flow at <code>https://open.shopee.com/auth</code> with a one-use, expiring <code>state</code>.</td><td><span class="priority must">Must</span></td><td>Callback domain is registered; forged, expired, or replayed callbacks are rejected.</td></tr>
+              <tr><td>FR-025</td><td>The system shall rotate Shopee's one-use refresh token atomically whenever it refreshes the four-hour access token.</td><td><span class="priority must">Must</span></td><td>Concurrent refresh cannot overwrite the newest token pair.</td></tr>
+              <tr><td>FR-026</td><td>The system shall obtain catalog data from the verified Shop and Product API operations and respect the 100-item listing page and 50-item detail-batch limits.</td><td><span class="priority must">Must</span></td><td>Boundary tests cover pagination and detail batching.</td></tr>
+              <tr><td>FR-027</td><td>The marketplace taxonomy shall be requested with <code>language=zh-hant</code> and stored with source IDs and parent relationships intact.</td><td><span class="priority must">Must</span></td><td>Taiwan category labels render in Traditional Chinese.</td></tr>
+              <tr><td>FR-028</td><td>An override may change title-based DZRZVD classification but shall never publish a non-<code>NORMAL</code>, unknown-stock, or out-of-stock item.</td><td><span class="priority must">Must</span></td><td>Status and stock remain non-overridable public safety gates.</td></tr>
+              <tr><td>FR-029</td><td>The production platform shall use Vercel for the Next.js application, server routes, daily cron, cache revalidation, and logs, with Supabase for PostgreSQL and operator authentication.</td><td><span class="priority must">Must</span></td><td>No alternative production database or custom password store is introduced.</td></tr>
+              <tr><td>FR-030</td><td>Vercel runtime database traffic shall use Supabase transaction pooling, while migrations, dumps, and controlled maintenance use the non-pooled connection.</td><td><span class="priority must">Must</span></td><td><code>POSTGRES_URL</code> and <code>POSTGRES_URL_NON_POOLING</code> have distinct validated uses.</td></tr>
+              <tr><td>FR-031</td><td>The operator interface shall use invite-only Supabase Auth with cookie-based SSR sessions and an active server-side administrator allowlist record.</td><td><span class="priority must">Must</span></td><td>Every protected request verifies the Auth user on the server and checks <code>app_private.app_admin</code>; public sign-up is unavailable.</td></tr>
+              <tr><td>FR-032</td><td>Overlapping syncs shall be prevented by an expiring, heartbeated database row lease owned by the current run.</td><td><span class="priority must">Must</span></td><td>A crashed run can be recovered after lease expiry and a stale owner cannot release a newer lease.</td></tr>
+              <tr><td>FR-033</td><td>Production, preview, and development Vercel environments shall not share the production Supabase project.</td><td><span class="priority must">Must</span></td><td>Preview/local cross-wiring fails a startup or deployment guard.</td></tr>
+              <tr><td>FR-034</td><td>Catalog and private application tables shall not be exposed to Supabase browser Data API roles.</td><td><span class="priority must">Must</span></td><td>Public catalog data is read through trusted Next.js server repositories; browser Supabase access is limited to Auth.</td></tr>
+              <tr><td>FR-035</td><td>All database schema changes shall be versioned in <code>supabase/migrations</code>, and a documented backup restore shall be tested before launch.</td><td><span class="priority must">Must</span></td><td>One authoritative migration history applies cleanly to non-production and production.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="information">
+        <p class="eyebrow">07 / Structure</p>
+        <h2>Information architecture</h2>
+        <h3>Existing-site preservation and new-route boundary</h3>
+        <div class="grid-4">
+          <div class="card"><span class="metric">/products</span><span class="small muted">New overview route</span></div>
+          <div class="card"><span class="metric">/[category]</span><span class="small muted">New category routes</span></div>
+          <div class="card"><span class="metric">/admin</span><span class="small muted">New protected route</span></div>
+          <div class="card"><span class="metric">No edits</span><span class="small muted">Existing pages/components</span></div>
+        </div>
+        <div class="callout warning">
+          <strong>Locked integration boundary</strong>
+          Do not add home-page catalog content, do not change existing navigation, and do not
+          modify the current home, about, location, Header, or Footer implementation.
+        </div>
+        <h3>Catalog hierarchy — confirmed</h3>
+        <ol>
+          <li><strong>商品系列</strong>: complete active DZRZVD catalog.</li>
+          <li><strong>Top-level product group</strong>: derived from Shopee category hierarchy or curated mapping.</li>
+          <li><strong>Leaf category</strong>: separate category page and the only visitor filtering dimension.</li>
+          <li><strong>Product card</strong>: original listing image and shortened title linking directly to Shopee.</li>
+        </ol>
+        <h3>URL model</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>URL</th><th>Purpose</th><th>MVP</th></tr></thead>
+            <tbody>
+              <tr><td><code>/products</code></td><td>All visible active/in-stock DZRZVD products shown in marketplace-category overview sections.</td><td>Required</td></tr>
+              <tr><td><code>/products/[categorySlug]</code></td><td>Shareable and indexable separate marketplace category page.</td><td>Required</td></tr>
+              <tr><td><code>/admin/shopee-catalog</code></td><td>Simple protected operator page for sync status, actions, and overrides.</td><td>Required</td></tr>
+              <tr><td>Local product detail route</td><td>Not created unless unique content and canonical strategy justify it.</td><td>Excluded</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Taxonomy source</h3>
+        <p>
+          Default to the marketplace category tree returned by Shopee Product APIs. Keep source
+          category IDs and parent relationships intact. Add local presentation metadata for
+          category label, description, hero media, visibility, and sort order.
+        </p>
+      </section>
+
+      <section id="screens">
+        <p class="eyebrow">08 / Interface</p>
+        <h2>Screen specifications</h2>
+        <h3>Screen A — Full catalog</h3>
+        <div class="wireframe">
+          <div>
+            <div class="screen">
+              <div class="screen-head"><span></span><span></span><span></span></div>
+              <div class="screen-body">
+                <div class="mock-nav"></div>
+                <div class="mock-hero">商品系列 / DZRZVD PRODUCTS</div>
+                <div class="mock-filters"><i></i><i></i><i></i><i></i></div>
+                <div class="mock-grid">
+                  <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+                  <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+                </div>
+              </div>
+            </div>
+            <p class="small muted">Conceptual desktop structure, not final visual design.</p>
+          </div>
+          <div>
+            <h4>Required regions</h4>
+            <ol>
+              <li>Existing DZRZVD site header.</li>
+              <li>Catalog hero with a balanced editorial/e-commerce purpose statement.</li>
+              <li>Last-updated timestamp and shop-level Shopee link.</li>
+              <li>Category-only navigation with active state.</li>
+              <li>Category result count or section headings.</li>
+              <li>Four-card desktop product grid.</li>
+              <li>Existing site footer.</li>
+            </ol>
+            <h4>Default entry behavior</h4>
+            <ul>
+              <li>Show overview sections for all visible marketplace categories.</li>
+              <li>Only active products with confirmed available stock greater than zero appear.</li>
+              <li>Selected category is encoded in a required category URL.</li>
+              <li>Returning browser navigation preserves the natural scroll/history behavior.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>Screen B — Mobile catalog</h3>
+        <div class="wireframe">
+          <div>
+            <div class="screen mobile">
+              <div class="screen-head"><span></span><span></span><span></span></div>
+              <div class="screen-body">
+                <div class="mock-nav"></div>
+                <div class="mock-hero">商品系列</div>
+                <div class="mock-filters"><i></i><i></i><i></i></div>
+                <div class="mock-grid">
+                  <div class="mock-card"></div><div class="mock-card"></div>
+                  <div class="mock-card"></div><div class="mock-card"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h4>Mobile requirements</h4>
+            <ul>
+              <li>Exactly two compact product cards per row at mobile breakpoints.</li>
+              <li>Category-only controls horizontally scroll without trapping the page, or use an accessible select.</li>
+              <li>Touch targets are at least 44×44 CSS pixels where practical.</li>
+              <li>Each card visibly contains only the original Shopee image and shortened title.</li>
+              <li>The whole card opens Shopee in a new tab; its accessible name communicates this.</li>
+              <li>Long titles clamp to two lines but remain available to assistive technology.</li>
+              <li>No horizontal page overflow.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>Screen C — Category page or selected category</h3>
+        <ul>
+          <li>Display category label, optional short description, and result count.</li>
+          <li>Keep the full category navigation accessible.</li>
+          <li>Provide a clear way back to all products.</li>
+          <li>Use a stable local slug independent of future Shopee label changes.</li>
+          <li>If the category is hidden or invalid, return a deliberate 404 rather than an empty successful page.</li>
+        </ul>
+      </section>
+
+      <section id="cards">
+        <p class="eyebrow">09 / Core component</p>
+        <h2>Product card specification</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Visible content — exactly two elements</h3>
+            <ul class="checklist">
+              <li>Original primary Shopee listing image, or local placeholder only when it fails.</li>
+              <li>Product title visually shortened to two lines.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Do not display</h3>
+            <ul>
+              <li>Current price or original price.</li>
+              <li>Stock or availability label.</li>
+              <li>Seller SKU/style code.</li>
+              <li>Category name or filter metadata.</li>
+              <li>New, discount, promotion, or other badges.</li>
+              <li>A separate visible Shopee CTA.</li>
+            </ul>
+          </div>
+        </div>
+        <h3>Card behavior</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Element</th><th>Behavior</th><th>Fallback</th></tr></thead>
+            <tbody>
+              <tr><td>Image</td><td>Stable aspect-ratio container, <code>object-fit: contain</code>, no crop, overlay, recoloring, or local edit.</td><td>Branded local placeholder.</td></tr>
+              <tr><td>Title</td><td>Two visual lines; the original full source title remains in the accessible name.</td><td>Hide the card when no valid title is available and record a warning.</td></tr>
+              <tr><td>Card link</td><td>The entire card is one link to the canonical Shopee listing and opens a new tab.</td><td>Hide the card when no safe valid HTTPS Shopee link exists.</td></tr>
+              <tr><td>Accessibility</td><td>Accessible name includes the full title, Shopee destination, and new-tab behavior.</td><td>None; card fails acceptance without this.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Interaction requirements</h3>
+        <ul>
+          <li>A restrained hover/focus treatment may lift the card or shift the image, matching the balanced visual direction.</li>
+          <li>The whole card has one visible keyboard focus state.</li>
+          <li>There are no nested links or secondary controls inside the card.</li>
+          <li>The Shopee/new-tab destination is announced through the accessible label because no visible CTA is shown.</li>
+          <li>Track the click once, without delaying navigation materially.</li>
+        </ul>
+      </section>
+
+      <section id="states">
+        <p class="eyebrow">10 / Resilience</p>
+        <h2>Catalog states and error behavior</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>State</th><th>Visitor experience</th><th>Operator behavior</th></tr></thead>
+            <tbody>
+              <tr><td><span class="state">Normal</span></td><td>Active, in-stock title-matched products, marketplace categories, and last-updated time.</td><td>No action.</td></tr>
+              <tr><td><span class="state">First sync pending</span></td><td>Branded empty state with link to the kuSport Shopee store.</td><td>Complete authorization and first sync.</td></tr>
+              <tr><td><span class="state">No products in category</span></td><td>Explain no current products and offer “View all products.”</td><td>Review category visibility if unexpected.</td></tr>
+              <tr><td><span class="state">Catalog stale</span></td><td>Keep products visible; show last-updated time without technical detail.</td><td>Alert and use sync runbook.</td></tr>
+              <tr><td><span class="state">Sync failed</span></td><td>No public error if cached data exists.</td><td>Record failed run, alert, enable manual retry.</td></tr>
+              <tr><td><span class="state">Shopee authorization revoked</span></td><td>Cached catalog remains until product owner chooses otherwise.</td><td>Reauthorize; do not expose token error publicly.</td></tr>
+              <tr><td><span class="state">Missing image</span></td><td>Local branded placeholder preserves card layout.</td><td>Count and flag missing images.</td></tr>
+              <tr><td><span class="state">Missing price</span></td><td>No effect because prices are not displayed on cards.</td><td>Store if available; no public card treatment.</td></tr>
+              <tr><td><span class="state">Out of stock or unknown stock</span></td><td>Product is absent from overview and category pages.</td><td>Retain record and continue daily updates.</td></tr>
+              <tr><td><span class="state">Deleted/unlisted</span></td><td>Hidden after confirmed complete sync according to policy.</td><td>Soft-deactivate; keep audit history.</td></tr>
+              <tr><td><span class="state">Unknown category</span></td><td>Display in Other if otherwise valid.</td><td>Refresh taxonomy and review warning.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout coral">
+          <strong>Never show raw integration failures to visitors</strong>
+          API error codes, authorization details, request IDs, stack traces, and database errors
+          belong in protected operational tooling and logs.
+        </div>
+      </section>
+
+      <section id="admin">
+        <p class="eyebrow">11 / Operations product</p>
+        <h2>Operator experience</h2>
+        <p>
+          The MVP includes a simple protected single-operator page at
+          <code>/admin/shopee-catalog</code>. It is a new route and does not modify any existing
+          public page.
+        </p>
+        <h3>MVP operator capabilities</h3>
+        <ul class="checklist">
+          <li>Connect or reconnect the kuSport Shopee shop.</li>
+          <li>Trigger a dry-run synchronization.</li>
+          <li>Trigger a full synchronization.</li>
+          <li>See latest run ID, start/end time, outcome, and summary counts.</li>
+          <li>See safe warnings such as unknown categories or count anomalies.</li>
+          <li>Search a product by item ID or title and see its title-token match result.</li>
+          <li>Force include or exclude a product with a required audit reason.</li>
+          <li>Confirm last successful public catalog update.</li>
+        </ul>
+        <h3>Minimum run summary</h3>
+        <div class="grid-4">
+          <div class="card"><span class="metric">42</span><span class="small muted">Items discovered</span></div>
+          <div class="card"><span class="metric">18</span><span class="small muted">DZRZVD included</span></div>
+          <div class="card"><span class="metric">24</span><span class="small muted">Other brands excluded</span></div>
+          <div class="card"><span class="metric">0</span><span class="small muted">Warnings</span></div>
+        </div>
+        <h3>Admin authorization requirements</h3>
+        <ul>
+          <li>Use Supabase Auth with one operator invited or created through the Supabase Dashboard; do not expose public sign-up.</li>
+          <li>Use <code>@supabase/ssr</code> cookie-based sessions and verify each protected request with server-side <code>auth.getUser()</code>.</li>
+          <li>Require the verified Auth UUID to have an active <code>app_private.app_admin</code> record; authentication alone is not authorization.</li>
+          <li>No custom password hash, application session secret, or parallel local account store is required.</li>
+          <li>Manual sync and override actions require both a valid Auth session and active administrator authorization.</li>
+          <li>Rate-limit login attempts and protect mutating actions against CSRF.</li>
+          <li>Actions store the verified Auth user UUID, reason, and time.</li>
+          <li>No administrative response displays Supabase secret keys, database URLs, Shopee tokens, partner keys, or signatures.</li>
+        </ul>
+      </section>
+
+      <section id="content">
+        <p class="eyebrow">12 / Voice and data</p>
+        <h2>Content and merchandising rules</h2>
+        <h3>Language</h3>
+        <ul>
+          <li>Public UI defaults to Traditional Chinese.</li>
+          <li>Brand name remains <strong>DZRZVD</strong>; <strong>杜戛地</strong> is also a confirmed title-match token.</li>
+          <li>Small functional English eyebrow text may accent Traditional Chinese headings.</li>
+          <li>Dates display in Asia/Taipei and use a concise local format.</li>
+          <li>Prices may be synchronized and stored but are not displayed on product cards.</li>
+        </ul>
+        <h3>Source versus curated content</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Content</th><th>Source</th><th>Can be locally curated?</th></tr></thead>
+            <tbody>
+              <tr><td>Product name</td><td>Shopee listing</td><td>Not in MVP; display source text.</td></tr>
+              <tr><td>Product price/status</td><td>Shopee API</td><td>Used for synchronization/visibility; not displayed on cards.</td></tr>
+              <tr><td>Product image</td><td>Shopee API</td><td>Fallback placeholder only.</td></tr>
+              <tr><td>Product brand classification</td><td>Shopee listing title + confirmed local token rules</td><td>Audited title-classification override only.</td></tr>
+              <tr><td>Category identity and parent</td><td>Shopee taxonomy</td><td>No.</td></tr>
+              <tr><td>Category display label</td><td>Shopee default</td><td>Yes, local presentation layer.</td></tr>
+              <tr><td>Category description and hero</td><td>Local brand content</td><td>Yes.</td></tr>
+              <tr><td>Category order/visibility</td><td>Local merchandising</td><td>Yes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Suggested public copy</h3>
+        <div class="grid-2">
+          <div class="card">
+            <h4>Catalog introduction</h4>
+            <p>探索 DZRZVD 機能服飾系列。商品資訊定期同步自 kuSport 蝦皮官方賣場。</p>
+          </div>
+          <div class="card">
+            <h4>Accessible card-link label</h4>
+            <p>在新分頁開啟蝦皮商品：［完整商品名稱］</p>
+          </div>
+          <div class="card">
+            <h4>Update status</h4>
+            <p>商品資料更新：2026/07/29 02:18</p>
+          </div>
+          <div class="card">
+            <h4>Empty category</h4>
+            <p>此分類目前沒有可購買的商品。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="accessibility">
+        <p class="eyebrow">13 / Inclusive design</p>
+        <h2>Accessibility requirements</h2>
+        <ul class="checklist">
+          <li>Meet WCAG 2.2 AA where applicable to the implemented catalog.</li>
+          <li>Provide one descriptive page <code>h1</code> and ordered section headings.</li>
+          <li>All category controls and whole-card product links are keyboard operable.</li>
+          <li>Visible focus is not removed and has adequate contrast.</li>
+          <li>Product images have meaningful alt text; decorative imagery uses empty alt text.</li>
+          <li>Out-of-stock and inactive products are absent rather than represented through color.</li>
+          <li>Text and interactive controls meet color contrast requirements.</li>
+          <li>Touch targets are sufficiently large and separated.</li>
+          <li>Reduced-motion preference disables nonessential animation.</li>
+          <li>Client-side result updates, if used, provide an accessible announcement.</li>
+          <li>Horizontal category scrolling does not prevent keyboard or page navigation.</li>
+          <li>Whole-card outbound links communicate through their accessible name that Shopee opens in a new tab.</li>
+        </ul>
+        <h3>Accessibility test set</h3>
+        <ul>
+          <li>Keyboard-only navigation from header through category controls and product cards.</li>
+          <li>Screen-reader heading and link-list review.</li>
+          <li>200% browser zoom without content loss.</li>
+          <li>Mobile portrait layout and large text settings.</li>
+          <li>Automated axe or equivalent checks plus manual review.</li>
+        </ul>
+      </section>
+
+      <section id="responsive">
+        <p class="eyebrow">14 / Layout system</p>
+        <h2>Responsive behavior</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Viewport</th><th>Grid</th><th>Category control</th><th>Content behavior</th></tr></thead>
+            <tbody>
+              <tr><td>Under 480px</td><td>2 compact columns</td><td>Category-only scrollable chips or select</td><td>Compact hero; image and two-line title remain readable.</td></tr>
+              <tr><td>480–767px</td><td>2 columns</td><td>Scrollable chips</td><td>Touch-first spacing.</td></tr>
+              <tr><td>768–1099px</td><td>2–3 columns</td><td>Wrapped tabs or chips</td><td>Moderate content width.</td></tr>
+              <tr><td>1100px and above</td><td>4 columns</td><td>Visible category links/chips</td><td>Balanced editorial section framing with efficient scanning.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Layout invariants</h3>
+        <ul>
+          <li>Product-card image aspect ratio remains stable to prevent layout shift.</li>
+          <li>Card heights may align within a row but should not create excessive blank space.</li>
+          <li>Category selection is always reachable without scrolling to the footer.</li>
+          <li>No product data is visible only on hover.</li>
+          <li>The longest realistic Traditional Chinese title does not break the card or page width.</li>
+        </ul>
+      </section>
+
+      <section id="seo">
+        <p class="eyebrow">15 / Discovery quality</p>
+        <h2>SEO and performance specifications</h2>
+        <h3>SEO</h3>
+        <ul>
+          <li>Catalog and category headings render on the server.</li>
+          <li><code>/products</code> has a unique title, description, canonical URL, and social metadata.</li>
+          <li>Category pages have stable local slugs and unique metadata when enabled.</li>
+          <li>Avoid thin local product-detail pages that simply duplicate Shopee.</li>
+          <li>Use descriptive internal links from home and relevant brand content.</li>
+          <li>Do not index empty or hidden category pages.</li>
+          <li>Make the Shopee transaction relationship transparent.</li>
+        </ul>
+        <h3>Performance targets</h3>
+        <div class="grid-3">
+          <div class="card">
+            <span class="metric">≤ 2.5s</span>
+            <strong>Target LCP</strong>
+            <p class="small muted">75th percentile on representative mobile traffic.</p>
+          </div>
+          <div class="card">
+            <span class="metric">≤ 0.1</span>
+            <strong>Target CLS</strong>
+            <p class="small muted">Stable image ratios and reserved content space.</p>
+          </div>
+          <div class="card">
+            <span class="metric">≤ 200ms</span>
+            <strong>Target INP</strong>
+            <p class="small muted">Minimal client JavaScript and simple filters.</p>
+          </div>
+        </div>
+        <h3>Performance implementation rules</h3>
+        <ul>
+          <li>No live Shopee calls in the visitor rendering path.</li>
+          <li>Use server-rendered cached catalog queries.</li>
+          <li>Optimize images with responsive sizes and lazy loading.</li>
+          <li>Prioritize only above-the-fold imagery when justified.</li>
+          <li>Keep category filtering server-side or use a small client component.</li>
+          <li>Avoid shipping raw Shopee payloads to the browser.</li>
+        </ul>
+      </section>
+
+      <section id="analytics">
+        <p class="eyebrow">16 / Measurement</p>
+        <h2>Analytics and success metrics</h2>
+        <h3>North-star outcome</h3>
+        <p>
+          Qualified outbound product visits to Shopee from the DZRZVD catalog, measured without
+          collecting unnecessary personal data.
+        </p>
+        <div class="grid-4">
+          <div class="card"><span class="metric">CTR</span><span class="small muted">Catalog view → Shopee product click</span></div>
+          <div class="card"><span class="metric">Find</span><span class="small muted">Category engagement rate</span></div>
+          <div class="card"><span class="metric">Fresh</span><span class="small muted">Successful sync within 26 hours</span></div>
+          <div class="card"><span class="metric">Clean</span><span class="small muted">Zero unrelated-brand products</span></div>
+        </div>
+        <h3>Event taxonomy</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Event</th><th>Trigger</th><th>Properties</th></tr></thead>
+            <tbody>
+              <tr><td><code>catalog_view</code></td><td>Catalog page becomes viewable.</td><td>page, category_mode, product_count, last_sync_age_bucket.</td></tr>
+              <tr><td><code>category_select</code></td><td>User intentionally selects a category.</td><td>category_id or local slug, label, result_count.</td></tr>
+              <tr><td><code>shopee_product_click</code></td><td>User activates the whole product card.</td><td>item_id, category, card_position.</td></tr>
+              <tr><td><code>shopee_shop_click</code></td><td>User activates the shop-level CTA.</td><td>page, placement.</td></tr>
+              <tr><td><code>catalog_empty_view</code></td><td>No public products are available.</td><td>reason bucket, last_sync_age_bucket.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Privacy rules</h3>
+        <ul>
+          <li>Do not send product titles when stable item IDs and category IDs suffice.</li>
+          <li>Do not collect buyer identity or Shopee account information.</li>
+          <li>Respect consent and analytics configuration applicable to the website.</li>
+          <li>Avoid blocking outbound navigation while waiting for analytics.</li>
+        </ul>
+        <h3>Operational metrics</h3>
+        <ul>
+          <li>Daily sync success rate.</li>
+          <li>Age of last successful sync.</li>
+          <li>DZRZVD active product count and change rate.</li>
+          <li>Excluded other-brand count.</li>
+          <li>Unknown category and missing image counts.</li>
+        </ul>
+      </section>
+
+      <section id="nonfunctional">
+        <p class="eyebrow">17 / Quality attributes</p>
+        <h2>Non-functional requirements</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Area</th><th>Requirement</th></tr></thead>
+            <tbody>
+              <tr><td>NFR-001</td><td>Availability</td><td>The public catalog remains available from cached data during Shopee API failure.</td></tr>
+              <tr><td>NFR-002</td><td>Freshness</td><td>At least 99% of days have a successful sync less than 26 hours old.</td></tr>
+              <tr><td>NFR-003</td><td>Correctness</td><td>No duplicate item IDs and zero known unrelated-brand products.</td></tr>
+              <tr><td>NFR-004</td><td>Security</td><td>Credentials and tokens are server-only, encrypted at rest where persisted, and redacted.</td></tr>
+              <tr><td>NFR-005</td><td>Privacy</td><td>No buyer, order, address, payment, message, or logistics data is requested or stored.</td></tr>
+              <tr><td>NFR-006</td><td>Performance</td><td>Target Core Web Vitals are met on representative catalog traffic.</td></tr>
+              <tr><td>NFR-007</td><td>Accessibility</td><td>Implemented experience targets WCAG 2.2 AA.</td></tr>
+              <tr><td>NFR-008</td><td>Maintainability</td><td>Transport, domain, persistence, and UI layers remain separated.</td></tr>
+              <tr><td>NFR-009</td><td>Observability</td><td>Every sync has a run ID, status, timestamps, counts, and safe error information.</td></tr>
+              <tr><td>NFR-010</td><td>Recovery</td><td>Authorized operator can initiate a safe dry run and full retry.</td></tr>
+              <tr><td>NFR-011</td><td>Compatibility</td><td>Support current evergreen Chrome, Edge, Firefox, and Safari plus common mobile browsers.</td></tr>
+              <tr><td>NFR-012</td><td>Internationalization</td><td>Public UI and dates support Traditional Chinese and Asia/Taipei.</td></tr>
+              <tr><td>NFR-013</td><td>Regression boundary</td><td>Existing pages and shared existing components remain unchanged.</td></tr>
+              <tr><td>NFR-014</td><td>Catalog visibility</td><td>Public queries fail closed for unknown stock and display only active, confirmed in-stock products.</td></tr>
+              <tr><td>NFR-015</td><td>Platform locality</td><td>Vercel Functions run in <code>sin1</code> when supported, and the Supabase project uses the closest available region to minimize database latency.</td></tr>
+              <tr><td>NFR-016</td><td>Database compatibility</td><td>Runtime queries work through Supavisor transaction pooling without prepared statements, session variables, temporary tables, or session advisory locks.</td></tr>
+              <tr><td>NFR-017</td><td>Environment isolation</td><td>Production data and operator identities are isolated from preview, development, and automated tests.</td></tr>
+              <tr><td>NFR-018</td><td>Authorization</td><td>Protected actions require server-verified Supabase Auth identity plus active application authorization.</td></tr>
+              <tr><td>NFR-019</td><td>Database exposure</td><td>Browser Data API roles have no privileges on <code>catalog</code> or <code>app_private</code>; highly privileged Supabase keys remain server-only.</td></tr>
+              <tr><td>NFR-020</td><td>Recovery</td><td>Backups match the chosen Supabase plan and recovery objective, and restore is exercised in an isolated non-production project.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="acceptance">
+        <p class="eyebrow">18 / Product sign-off</p>
+        <h2>Acceptance criteria</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Catalog accuracy</h3>
+            <ul class="checklist">
+              <li>Product owner reviews the real synchronized assortment.</li>
+              <li>All expected active, in-stock titles containing DZRZVD or 杜戛地 appear.</li>
+              <li>Title-unmatched, inactive, and out-of-stock products do not appear.</li>
+              <li>Category placement is understandable and traceable.</li>
+              <li>Images, active/in-stock eligibility, and links match representative Shopee listings.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Visitor experience</h3>
+            <ul class="checklist">
+              <li><code>/products</code> presents category overview sections.</li>
+              <li>Every visible category has a separate category page.</li>
+              <li>Category is the only filter dimension.</li>
+              <li>Desktop shows four cards per row and mobile shows two compact cards per row.</li>
+              <li>Each card visibly shows only the original Shopee image and shortened title.</li>
+              <li>The whole card opens the correct Shopee page in a new tab.</li>
+              <li>Empty, missing-image, and stale states are intentional.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Trust and resilience</h3>
+            <ul class="checklist">
+              <li>Last-updated time is visible.</li>
+              <li>A failed sync leaves the last valid catalog online.</li>
+              <li>Partial sync failure does not remove products.</li>
+              <li>No raw operational error reaches visitors.</li>
+              <li>The site accurately represents Shopee as purchase destination.</li>
+              <li>No existing page or existing shared component is modified.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Operations</h3>
+            <ul class="checklist">
+              <li>Production Vercel is connected to production Supabase in the selected nearby regions.</li>
+              <li>Preview and development use separate non-production Supabase resources.</li>
+              <li>Runtime pooling and non-pooled migration paths are both verified.</li>
+              <li>Scheduled synchronization succeeds in production.</li>
+              <li>Manual dry run and full retry are tested.</li>
+              <li>Invite-only Supabase Auth protects the admin page and active administrator allowlist.</li>
+              <li>Force include/exclude actions require and retain an audit reason.</li>
+              <li>Browser Data API roles cannot access application schemas.</li>
+              <li>A non-production backup restore succeeds.</li>
+              <li>Sync anomalies are observable.</li>
+              <li>Reauthorization procedure is documented.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="release">
+        <p class="eyebrow">19 / Launch</p>
+        <h2>Release and validation plan</h2>
+        <ol>
+          <li><strong>Platform provisioning:</strong> connect Vercel to production Supabase, create separate non-production resources, choose nearby regions, and verify environment scopes.</li>
+          <li><strong>Schema and Auth:</strong> apply <code>supabase/migrations</code>, verify schema grants, invite the operator, and create the active <code>app_admin</code> record.</li>
+          <li><strong>Fixture preview:</strong> build the UI against sanitized representative Shopee payloads on non-production Supabase.</li>
+          <li><strong>Authorized dry run:</strong> fetch real kuSport data without changing public catalog visibility.</li>
+          <li><strong>Catalog comparison:</strong> compare title-token matches, active/in-stock exclusions, categories, images, and links.</li>
+          <li><strong>Product-owner review:</strong> approve the two title tokens, category presentation, product set, and hidden out-of-stock behavior.</li>
+          <li><strong>Preview deployment:</strong> test mobile, desktop, accessibility, performance, Auth expiry, lease recovery, and error states.</li>
+          <li><strong>Recovery drill:</strong> restore a backup into isolated non-production and confirm the migration chain and key-recovery procedure.</li>
+          <li><strong>Initial production sync:</strong> populate Supabase while the dedicated routes remain unshared if necessary.</li>
+          <li><strong>Soft launch:</strong> expose catalog URL directly and run production smoke tests.</li>
+          <li><strong>Dedicated-route launch:</strong> publish <code>/products</code> and category URLs without changing existing pages or navigation.</li>
+          <li><strong>Monitor 72 hours:</strong> watch sync success, item counts, database latency, images, clicks, and runtime errors.</li>
+          <li><strong>Post-launch review:</strong> document baseline metrics and prioritize version 1.3.</li>
+        </ol>
+        <h3>Launch blockers</h3>
+        <ul>
+          <li>Shopee authorization or required API permission is unavailable.</li>
+          <li>Taiwan developer screening, callback-domain configuration, or live Shop/Product/Public permissions are incomplete.</li>
+          <li>Production Vercel is not connected to the intended production Supabase project, or preview/local environments can reach it.</li>
+          <li><code>POSTGRES_URL</code> runtime pooling and <code>POSTGRES_URL_NON_POOLING</code> migration access are not separately verified.</li>
+          <li>Supabase Auth allows public sign-up, the operator lacks an active <code>app_admin</code> record, or server-side identity verification is absent.</li>
+          <li>Browser roles can query <code>catalog</code> or <code>app_private</code>, or <code>SUPABASE_SECRET_KEY</code> reaches a client bundle.</li>
+          <li>The authoritative Supabase migration chain does not apply cleanly, or backup restore has not been tested.</li>
+          <li>Sync overlap protection depends on session advisory locks instead of the expiring row lease.</li>
+          <li>The real product set contains unresolved false positives.</li>
+          <li>Tokens or partner credentials appear in logs or browser artifacts.</li>
+          <li>Partial failure can remove existing public products.</li>
+          <li>The project does not build or critical tests fail.</li>
+          <li>Product owner decisions encoded in this document are not implemented exactly.</li>
+        </ul>
+      </section>
+
+      <section id="integration">
+        <p class="eyebrow">20 / Platform and source contract</p>
+        <h2>Vercel + Supabase platform and verified Shopee API contract</h2>
+        <p class="lead">
+          Shopee's official Open Platform documentation was checked on 2026-07-29.
+          The API Calls guide is marked updated 2025-11-21, and the newer Authorization
+          and Authentication guide is marked updated 2026-07-24. These verified contracts
+          replace assumptions in earlier planning drafts. Official Vercel and Supabase platform
+          documentation was checked on 2026-07-30.
+        </p>
+
+        <h3>Locked production platform</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Layer</th><th>Chosen service</th><th>Responsibility</th><th>Explicit boundary</th></tr></thead>
+            <tbody>
+              <tr><td>Web and compute</td><td>Vercel</td><td>Next.js hosting, CDN, Node Route Handlers, Server Components, daily Cron, cache revalidation, environment scoping, and runtime logs.</td><td>Set Function region to <code>sin1</code> when supported; public page requests never call Shopee.</td></tr>
+              <tr><td>Application data</td><td>Supabase Postgres</td><td>Normalized catalog, Shopee authorization state, sync audits, overrides, admin allowlist, and sync leases.</td><td>Use <code>catalog</code> and <code>app_private</code> schemas outside browser Data API exposure.</td></tr>
+              <tr><td>Operator identity</td><td>Supabase Auth</td><td>Invite-only operator login and cookie-based SSR session.</td><td>Server verifies <code>auth.getUser()</code> and active <code>app_admin</code> membership on every protected request.</td></tr>
+              <tr><td>Runtime SQL</td><td>Supavisor transaction pooler</td><td>Short serverless queries through <code>POSTGRES_URL</code>.</td><td>Prepared statements, session state, temporary tables, and session advisory locks are prohibited.</td></tr>
+              <tr><td>Schema operations</td><td>Supabase CLI + direct connection</td><td><code>supabase/migrations</code>, dumps, restores, and controlled maintenance through <code>POSTGRES_URL_NON_POOLING</code>.</td><td>No second Drizzle migration chain and no unrecorded production schema edits.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>Provisioning and isolation</strong>
+          Use the Vercel Marketplace Supabase integration first for unified provisioning and
+          environment injection. Supabase currently labels that integration Public Alpha, so the
+          documented fallback is to connect the same Supabase project manually with the identical
+          environment-variable contract. Production and non-production must use separate Supabase
+          projects by default; optional Supabase Branching is acceptable only when the chosen plan
+          and preview lifecycle support it.
+        </div>
+        <div class="callout warning">
+          <strong>Auth package maturity</strong>
+          Supabase currently describes <code>@supabase/ssr</code> as beta. Pin its version,
+          isolate client/session handling behind a small adapter, and require login, callback,
+          cookie-refresh, expiry, logout, and authorization tests before any upgrade.
+        </div>
+        <div class="callout warning">
+          <strong>Services deliberately not used in MVP</strong>
+          Shopee listing images remain remote URLs, so Supabase Storage is unnecessary. Vercel Cron
+          remains the scheduler; Supabase Realtime, Edge Functions, and <code>pg_cron</code> add no
+          required product value. Browser code uses Supabase only for Auth, not catalog CRUD.
+        </div>
+        <h3>Vercel environment contract</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Variable</th><th>Exposure</th><th>Required use</th></tr></thead>
+            <tbody>
+              <tr><td><code>POSTGRES_URL</code></td><td>Server secret</td><td>Supavisor transaction-pooled runtime SQL; prepared statements disabled.</td></tr>
+              <tr><td><code>POSTGRES_URL_NON_POOLING</code></td><td>Migration/maintenance secret</td><td>Supabase migrations, logical dumps, restores, and controlled maintenance only.</td></tr>
+              <tr><td><code>SUPABASE_URL</code></td><td>Server configuration</td><td>Server-side Auth client project URL.</td></tr>
+              <tr><td><code>SUPABASE_PUBLISHABLE_KEY</code></td><td>Publishable server configuration</td><td>Server-side SSR Auth client initialization.</td></tr>
+              <tr><td><code>SUPABASE_SECRET_KEY</code></td><td>Highly privileged server secret</td><td>Optional, isolated Auth administration such as a server-side invitation flow; not catalog queries or normal requests.</td></tr>
+              <tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>Browser-safe configuration</td><td>Browser Auth client project URL.</td></tr>
+              <tr><td><code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code></td><td>Browser-safe configuration</td><td>Browser Auth client publishable key.</td></tr>
+              <tr><td>Shopee credentials, token-encryption key, <code>CRON_SECRET</code></td><td>Server secrets</td><td>Existing integration signing, encrypted token storage, and cron authentication.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Serverless synchronization lease</h3>
+        <ul>
+          <li><code>app_private.sync_lock</code> stores <code>shop_id</code>, <code>owner_run_id</code>, acquisition time, heartbeat time, and <code>locked_until</code>.</li>
+          <li>Acquisition is one atomic insert-or-update that succeeds only when no lease exists or the prior lease is expired according to database time.</li>
+          <li>The worker heartbeats between Shopee batches, aborts if ownership is lost, and releases only when both shop and owner IDs match.</li>
+          <li>Token refresh remains serialized under the lease and uses compare-and-swap so an old worker cannot overwrite the newest one-use refresh token.</li>
+          <li>No database transaction remains open while waiting for Shopee HTTP responses.</li>
+        </ul>
+        <h3>Platform security and recovery contract</h3>
+        <ul>
+          <li>Only <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> enter browser configuration.</li>
+          <li><code>SUPABASE_SECRET_KEY</code>, pooled and non-pooled database URLs, Shopee secrets, and <code>CRON_SECRET</code> remain server-only.</li>
+          <li>Prefer Supabase publishable and secret keys for new work; do not build new dependencies on legacy <code>anon</code>/<code>service_role</code> key names.</li>
+          <li>Use paid scheduled backups and PITR when the recovery objective requires them; on Free, create regular encrypted off-site logical dumps.</li>
+          <li>Test restore in non-production and recover the Shopee token-encryption key separately because database backups do not contain Vercel environment secrets.</li>
+        </ul>
+
+        <h3>Required operations</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Operation</th><th>Official path or URL</th><th>Product purpose</th><th>Contract</th></tr></thead>
+            <tbody>
+              <tr><td>Authorize seller shop</td><td><code>https://open.shopee.com/auth</code></td><td>Connect the operator-controlled kuSport shop.</td><td><code>auth_type=seller</code>, registered callback, one-use <code>state</code>.</td></tr>
+              <tr><td>Exchange code</td><td><code>POST /api/v2/auth/token/get</code></td><td>Obtain the first token pair and shop identifier.</td><td>Authorization code is one-use and expires after 10 minutes.</td></tr>
+              <tr><td>Refresh tokens</td><td><code>POST /api/v2/auth/access_token/get</code></td><td>Keep daily synchronization authorized.</td><td>Access token lasts four hours; 30-day refresh token is one-use and rotates.</td></tr>
+              <tr><td>Verify shop</td><td><code>GET /api/v2/shop/get_shop_info</code></td><td>Prevent syncing or publishing the wrong shop.</td><td>Require intended shop, region <code>TW</code>, and status <code>NORMAL</code>.</td></tr>
+              <tr><td>List products</td><td><code>GET /api/v2/product/get_item_list</code></td><td>Discover listing IDs and current Shopee status.</td><td>Up to 100 per page; follow <code>next_offset</code> to completion.</td></tr>
+              <tr><td>Read product details</td><td><code>GET /api/v2/product/get_item_base_info</code></td><td>Obtain title, first listing image, marketplace category, and sellable stock.</td><td>At most 50 item IDs; use <code>total_available_stock</code> for visibility.</td></tr>
+              <tr><td>Read marketplace taxonomy</td><td><code>GET /api/v2/product/get_category</code></td><td>Create overview sections and category pages.</td><td>Request <code>language=zh-hant</code>; store IDs, parents, names, and child state.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Daily publication rules</h3>
+        <div class="journey">
+          <div>Vercel Cron<small>Protected daily trigger</small></div>
+          <div>Authorize<small>Row lease + atomic token rotation</small></div>
+          <div>Reconcile<small>Status pages + detail batches</small></div>
+          <div>Classify<small>Title, stock, category</small></div>
+          <div>Publish<small>Commit then revalidate</small></div>
+        </div>
+        <ul>
+          <li>Only <code>NORMAL</code> products with confirmed <code>total_available_stock &gt; 0</code> continue to the public classifier.</li>
+          <li>The normalized title must contain <code>DZRZVD</code> case-insensitively or contain <code>杜戛地</code>.</li>
+          <li>The first source listing image is used as-is; the product card links to <code>https://shopee.tw/product/{shop_id}/{item_id}</code>.</li>
+          <li>A full run publishes atomically. Partial pagination or detail failure leaves the prior catalog unchanged.</li>
+          <li>Every failed Shopee call records its safe error code and <code>request_id</code>; secrets never enter logs or the browser.</li>
+          <li>Start with only two to four concurrent Shopee calls and tune against the approved application's real quotas.</li>
+        </ul>
+
+        <h3>Conditional and excluded interfaces</h3>
+        <ul>
+          <li><code>v2.product.get_model_list</code> is conditional and not used in MVP unless aggregate product stock is missing or inconsistent.</li>
+          <li>ShopCategory APIs are not used because the confirmed grouping source is Shopee marketplace taxonomy.</li>
+          <li>Product, price, stock, order, buyer, logistics, and marketing write operations are excluded.</li>
+          <li>Push notifications may become a faster change signal, but cannot replace daily full reconciliation.</li>
+          <li>Undocumented Shopee web endpoints and browser scraping are excluded.</li>
+        </ul>
+
+        <h3>Application-side routes</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Route</th><th>Audience</th><th>Product behavior</th></tr></thead>
+            <tbody>
+              <tr><td><code>GET /api/shopee/auth/start</code></td><td>Operator</td><td>Starts the current Shopee seller authorization flow with replay-resistant state.</td></tr>
+              <tr><td><code>GET /api/shopee/auth/callback</code></td><td>Shopee redirect</td><td>Connects only the verified kuSport Taiwan shop and stores no authorization code.</td></tr>
+              <tr><td><code>GET /api/cron/shopee-sync</code></td><td>Vercel Cron</td><td>Performs daily full reconciliation under a secret and expiring shop row lease.</td></tr>
+              <tr><td><code>GET /api/admin/shopee/status</code></td><td>Operator</td><td>Shows safe authorization, expiry, shop, and synchronization health.</td></tr>
+              <tr><td><code>POST /api/admin/shopee/sync</code></td><td>Operator</td><td>Starts a dry run or full sync through the same production service.</td></tr>
+              <tr><td><code>PATCH /api/admin/products/{item_id}/override</code></td><td>Operator</td><td>Sets or clears an audited title-classification override without bypassing stock/status gates.</td></tr>
+              <tr><td><code>GET /api/catalog/categories</code></td><td>Public, optional JSON</td><td>Returns visible marketplace categories and counts from cached normalized data.</td></tr>
+              <tr><td><code>GET /api/catalog/products?category_id=…</code></td><td>Public, optional JSON</td><td>Returns only products that satisfy every public visibility rule.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted">
+          The server-rendered pages may query the catalog repository directly. Public JSON
+          routes are optional and must never trigger a live Shopee request.
+        </p>
+
+        <h3>Official Shopee, Vercel, and Supabase URLs</h3>
+        <ul>
+          <li><a href="https://open.shopee.com/developer-guide/16">Shopee Open API v2 API Calls Guide</a></li>
+          <li><a href="https://open.shopee.com/developer-guide/20">Shopee Authorization and Authentication Guide</a></li>
+          <li><a href="https://open.shopee.com/console">Shopee Open Platform Console</a></li>
+          <li><a href="https://open.shopee.com/documents/v2/v2.public.get_access_token?type=1">Get Access Token</a></li>
+          <li><a href="https://open.shopee.com/documents/v2/v2.public.refresh_access_token?type=1">Refresh Access Token</a></li>
+          <li><a href="https://open.shopee.com/documents/v2/v2.shop.get_shop_info?type=1">Get Shop Information</a></li>
+          <li><a href="https://open.shopee.com/documents/v2/v2.product.get_item_list?module=89&amp;type=1">Get Item List</a></li>
+          <li><a href="https://open.shopee.com/documents/v2/v2.product.get_item_base_info?module=89&amp;type=1">Get Item Base Information</a></li>
+          <li><a href="https://open.shopee.com/documents/v2/v2.product.get_category?module=89&amp;type=1">Get Category</a></li>
+          <li><a href="https://open.shopee.com/developer-guide/209">Category Tree Integration Guide</a></li>
+          <li><a href="https://open.shopee.com/documents/v2/v2.product.get_model_list?module=89&amp;type=1">Get Model List — conditional</a></li>
+          <li><a href="https://open.shopee.com/push-mechanism/5">Reserved Stock Change Push — future signal only</a></li>
+          <li><a href="https://vercel.com/marketplace/supabase/supabase">Vercel Marketplace — Supabase integration</a></li>
+          <li><a href="https://vercel.com/docs/marketplace-storage">Vercel Marketplace storage integrations</a></li>
+          <li><a href="https://vercel.com/docs/functions/configuring-functions/region">Vercel Function regions</a></li>
+          <li><a href="https://vercel.com/docs/regions">Vercel regions</a></li>
+          <li><a href="https://supabase.com/docs/guides/integrations/vercel-marketplace">Supabase — Vercel Marketplace integration</a></li>
+          <li><a href="https://supabase.com/docs/guides/database/connecting-to-postgres">Supabase database connections and Supavisor</a></li>
+          <li><a href="https://supabase.com/docs/guides/auth/server-side">Supabase server-side Auth</a></li>
+          <li><a href="https://supabase.com/docs/guides/auth/server-side/creating-a-client?framework=nextjs&amp;queryGroups=framework">Supabase Next.js SSR client</a></li>
+          <li><a href="https://supabase.com/docs/guides/getting-started/api-keys">Supabase API keys</a></li>
+          <li><a href="https://supabase.com/docs/guides/api/securing-your-api">Supabase Data API security</a></li>
+          <li><a href="https://supabase.com/docs/guides/database/secure-data">Supabase secure data</a></li>
+          <li><a href="https://supabase.com/docs/guides/auth/users">Supabase Auth users and invitations</a></li>
+          <li><a href="https://supabase.com/docs/guides/deployment/database-migrations">Supabase database migrations</a></li>
+          <li><a href="https://supabase.com/docs/guides/deployment">Supabase environments and branching</a></li>
+          <li><a href="https://supabase.com/docs/guides/platform/backups">Supabase backups and point-in-time recovery</a></li>
+        </ul>
+        <div class="callout warning">
+          <strong>Authorization implementation note</strong>
+          The current guide introduces the fixed <code>/auth</code> URL but still contains
+          legacy signed <code>/api/v2/shop/auth_partner</code> material elsewhere. The new
+          flow must be proven in Shopee Sandbox before production, and no new code should
+          depend on the legacy authorization endpoint.
+        </div>
+      </section>
+
+      <section id="questions">
+        <p class="eyebrow">21 / Locked scope</p>
+        <h2>Confirmed owner decisions</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Decision</th><th>Confirmed answer</th><th>Implementation consequence</th></tr></thead>
+            <tbody>
+              <tr><td>Production platform</td><td>Vercel + Supabase.</td><td>Vercel provides web/compute/cron; Supabase provides Postgres and invite-only operator Auth.</td></tr>
+              <tr><td>Category source</td><td>Shopee marketplace categories.</td><td>Do not implement ShopCategory grouping or a mode switch.</td></tr>
+              <tr><td>Out-of-stock behavior</td><td>Hide completely.</td><td>Require confirmed stock above zero in every public query.</td></tr>
+              <tr><td>Synchronization</td><td>Daily.</td><td>One Vercel cron run per day.</td></tr>
+              <tr><td>DZRZVD identification</td><td>Title/name contains DZRZVD or 杜戛地.</td><td>No automatic brand-, description-, category-, or SKU-based inclusion.</td></tr>
+              <tr><td>Status visibility</td><td>Active products only.</td><td>Public status must be NORMAL and not inactive.</td></tr>
+              <tr><td>Visual direction</td><td>Balanced editorial and e-commerce.</td><td>Premium section framing with efficient product scanning.</td></tr>
+              <tr><td>Category experience</td><td>Overview sections plus separate category pages.</td><td><code>/products</code> and required <code>/products/[categorySlug]</code>.</td></tr>
+              <tr><td>Grid density</td><td>Four cards desktop; two cards mobile.</td><td>Exact responsive acceptance requirement.</td></tr>
+              <tr><td>Card content</td><td>Image and shortened title only.</td><td>No price, status, SKU, badge, category, or visible CTA.</td></tr>
+              <tr><td>Image source</td><td>Shopee listing image as-is.</td><td>No crop, edit, recolor, or valid-image replacement.</td></tr>
+              <tr><td>Filters</td><td>Categories only.</td><td>No other filter controls.</td></tr>
+              <tr><td>Language</td><td>Traditional Chinese with small English accents.</td><td>Local copy and restrained English eyebrows.</td></tr>
+              <tr><td>Site placement</td><td>Dedicated new routes only.</td><td>Do not modify any existing page or shared existing component.</td></tr>
+              <tr><td>Card interaction</td><td>Open corresponding Shopee page in a new tab.</td><td>The whole card is one accessible external link.</td></tr>
+              <tr><td>Operator tooling</td><td>Simple protected admin page.</td><td>Invite-only Supabase Auth, server-side <code>app_admin</code> authorization, sync status, manual actions, and audited overrides.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>Implementation rule</strong>
+          These decisions are no longer open options. Changes require explicit product-owner
+          approval and synchronized updates to the implementation plan, LLM specification, and PRD.
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      DZRZVD Shopee Catalog Product Specifications · Version 1.2 · 2026-07-30 ·
+      Companion to the detailed implementation plan.
+    </div>
+  </footer>
+</body>
+</html>

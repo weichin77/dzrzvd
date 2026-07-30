@@ -1,0 +1,3388 @@
+DZRZVD SHOPEE CATALOG INTEGRATION
+DETAILED IMPLEMENTATION PLAN FOR LLMS AND SOFTWARE AGENTS
+
+DOCUMENT_METADATA
+  document_id: dzrzvd-shopee-catalog-implementation-plan
+  version: 1.2
+  status: ready_for_implementation
+  created_date: 2026-07-29
+  last_updated_date: 2026-07-30
+  platform_documentation_verified_date: 2026-07-30
+  shopee_documentation_verified_date: 2026-07-29
+  shopee_api_calls_guide_updated_date: 2025-11-21
+  shopee_authorization_guide_updated_date: 2026-07-24
+  repository: dzrzvd
+  project_root: C:\Users\kuspo\OneDrive\DZRZVD
+  production_domain: https://www.dzrzvd.com.tw
+  source_shop_url: https://shopee.tw/kusport
+  primary_language: zh-Hant
+  planning_language: English
+  default_timezone: Asia/Taipei
+  source_of_truth_priority:
+    1: Shopee Open Platform authorized APIs
+    2: Existing authorized ERP or channel manager
+    3: Seller-controlled export
+    4: Terms-reviewed public storefront crawler
+  implementation_not_started_by_this_document: true
+
+======================================================================
+1. EXECUTIVE_INTENT
+======================================================================
+
+Build a production-grade, read-only integration that periodically retrieves the
+kuSport Shopee seller catalog, identifies only DZRZVD products, normalizes the
+product records, assigns each product to a Shopee category hierarchy, persists
+the resulting catalog in Supabase Postgres, and renders it on the existing
+DZRZVD Next.js website hosted by Vercel.
+
+The public website is a discovery and brand-presentation layer. Product purchase
+and checkout continue on Shopee. A public visitor request must never make a live
+Shopee API request. The website reads cached normalized data from Supabase
+Postgres through server-only repository functions.
+
+Confirmed production behavior:
+  - Authorized Shopee Open Platform integration.
+  - Once-daily synchronization.
+  - Default run target: approximately 02:00 Asia/Taipei.
+  - Vercel cron expression: 0 18 * * * because Vercel cron uses UTC.
+  - Vercel hosts Next.js, Node.js Route Handlers, Cron, environment variables,
+    cache revalidation, and runtime logs.
+  - Supabase provides managed Postgres and invite-only operator Auth.
+  - Supabase is provisioned or connected through Vercel Marketplace.
+  - Runtime SQL uses the Supabase transaction pooler.
+  - Migrations and controlled maintenance use the non-pooled/direct connection.
+  - Supabase Storage, Realtime, Edge Functions, Data API access to app tables,
+    and pg_cron are not required.
+  - Shopee marketplace category taxonomy is the only grouping mode for this release.
+  - DZRZVD matching uses normalized product title/name substring matching for
+    "DZRZVD" or "杜戛地".
+  - Only products with Shopee status NORMAL and confirmed available stock above
+    zero are publicly visible.
+  - /products is a category-overview page and /products/[categorySlug] provides
+    required separate category pages.
+  - Product cards show only the Shopee listing image and a shortened title.
+  - Product cards open the corresponding Shopee listing in a new tab.
+  - Desktop uses four cards per row; mobile uses two compact cards per row.
+  - The visual direction balances editorial brand presentation and e-commerce density.
+  - Public copy uses Traditional Chinese with small English brand accents.
+  - The only visitor filter dimension is category.
+  - The catalog is implemented only in new routes. Existing pages and existing
+    shared components must not be modified.
+  - A simple protected single-operator admin page provides sync status, manual
+    synchronization, and audited product overrides.
+  - The last valid database catalog remains public when synchronization fails.
+  - Missing products are soft-deactivated only after a complete successful scan.
+
+External production dependency:
+  - Shopee must approve the developer application and required API permissions.
+  - The kuSport seller account must authorize the application.
+  - Production client credentials must be configured in Vercel.
+  - A production Supabase project must be connected to Vercel with correctly
+    scoped environment variables.
+  - Preview and development must use an isolated non-production Supabase project.
+
+======================================================================
+2. EXISTING_SYSTEM_BASELINE
+======================================================================
+
+Application:
+  framework: Next.js
+  next_version: 16.2.6
+  routing: App Router
+  react_version: 19.2.6
+  runtime_preference: Node.js for Shopee and database routes
+  styling: app/globals.css plus existing DZRZVD design tokens
+  current_pages:
+    - /
+    - /about
+    - /location
+  current_product_behavior:
+    - Static product collection links on the home page.
+    - External links lead to Shopee.
+  current_database_state:
+    - Drizzle packages are present.
+    - No PostgreSQL runtime driver is declared.
+    - @supabase/supabase-js and @supabase/ssr are not declared.
+    - No catalog schema or production Shopee integration is implemented.
+
+Repository notes that should be handled before or during implementation:
+  - Add postgres and use drizzle-orm/postgres-js with prepare=false for
+    Supavisor transaction mode.
+  - Add pinned @supabase/supabase-js and @supabase/ssr packages; isolate Auth
+    client/session code behind adapters while @supabase/ssr remains beta.
+  - Verify source files are encoded as UTF-8 and repair any corrupted Traditional
+    Chinese text before catalog UI work.
+  - Existing rendered-html tests appear to describe an earlier starter and must
+    be evaluated before relying on the test suite as a clean baseline.
+  - Do not remove or rewrite unrelated user changes.
+
+Commerce source:
+  shop: kuSport
+  shop_url: https://shopee.tw/kusport
+  market: TW
+  mixed_brand_store: true
+  expected_non_dzrzvd_brands: true
+  implication:
+    - Never equate "belongs to kuSport" with "belongs to DZRZVD."
+    - Brand classification is a first-class correctness and safety feature.
+
+======================================================================
+3. GOALS
+======================================================================
+
+GOAL-001:
+  Import every active DZRZVD product that the approved Shopee APIs expose for the
+  authorized kuSport shop.
+
+GOAL-002:
+  Exclude products from all other brands in the kuSport shop.
+
+GOAL-003:
+  Persist stable normalized product records keyed by Shopee item_id.
+
+GOAL-004:
+  Map each product to a Shopee marketplace category and a complete category
+  breadcrumb.
+
+GOAL-005:
+  Render marketplace category overview sections and required separate category
+  pages without implementing seller-defined ShopCategory grouping.
+
+GOAL-006:
+  Automatically update product title, SKU, brand, price, stock summary, status,
+  images, Shopee URL, category, and source update timestamp.
+
+GOAL-007:
+  Serve a responsive, accessible, balanced editorial/e-commerce catalog with
+  four cards per desktop row, two per mobile row, and image/title-only cards.
+
+GOAL-008:
+  Preserve the last valid catalog when Shopee, Vercel cron, or the database write
+  workflow encounters a transient failure.
+
+GOAL-009:
+  Keep all Shopee credentials, authorization codes, access tokens, refresh
+  tokens, partner keys, and signatures out of browser code and logs.
+
+GOAL-010:
+  Provide observable synchronization runs and a safe manual recovery path.
+
+======================================================================
+4. NON_GOALS_FOR_MVP
+======================================================================
+
+NON_GOAL-001: Implementing checkout, cart, or payments on dzrzvd.com.tw.
+NON_GOAL-002: Creating or editing Shopee listings.
+NON_GOAL-003: Writing price, stock, product, category, promotion, or shop data.
+NON_GOAL-004: Importing orders, buyers, addresses, messages, logistics, or payments.
+NON_GOAL-005: Customer accounts, wishlists, or personalization.
+NON_GOAL-006: Marketplace-wide search outside the authorized kuSport shop.
+NON_GOAL-007: AI generation of product names or descriptions.
+NON_GOAL-008: Depending on an undocumented Shopee endpoint for production.
+NON_GOAL-009: Replacing Shopee as seller of record.
+NON_GOAL-010: Assuming image-copying rights that have not been reviewed.
+NON_GOAL-011: Modifying any existing public page, Header, or Footer component.
+NON_GOAL-012: Showing prices, stock labels, SKU, badges, or CTA text on product cards.
+NON_GOAL-013: Showing inactive or out-of-stock products.
+NON_GOAL-014: Filtering by gender, price, season, stock, or keyword.
+
+======================================================================
+5. PRODUCT_AND_TECHNICAL_DECISIONS
+======================================================================
+
+DECISION-001:
+  question: What does "Shopee product categories" mean?
+  confirmed: Shopee marketplace product taxonomy.
+  implementation_value: marketplace
+  shop_category_mode_implemented: false
+  design_requirement:
+    - Preserve source taxonomy separately from curated presentation metadata.
+    - /products contains overview sections.
+    - /products/[categorySlug] is required for separate category pages.
+
+DECISION-002:
+  question: How frequently should synchronization run?
+  confirmed: Once daily.
+  notes:
+    - Vercel cron uses UTC.
+    - Hobby runs may occur anywhere within the scheduled hour.
+    - Vercel cron does not automatically retry failed invocations.
+
+DECISION-003:
+  question: How should out-of-stock items be displayed?
+  confirmed: Hide from all public catalog queries and pages.
+  store_data_regardless_of_display: true
+  unknown_stock_visibility: hidden
+  required_public_stock_predicate: available_stock greater than zero
+
+DECISION-004:
+  question: How are DZRZVD products detected?
+  confirmed:
+    1: Normalize the Shopee product title/name.
+    2: Include when title contains "DZRZVD", compared case-insensitively.
+    3: Include when title contains "杜戛地".
+    4: Apply an audited operator title-classification include or exclude exception
+       when present; it cannot bypass status or stock gates.
+  prohibited:
+    - Using Shopee brand metadata as an automatic inclusion requirement.
+    - Using description, category, or SKU as an automatic inclusion rule.
+    - Automatic fuzzy inclusion.
+    - Importing the entire kuSport catalog.
+
+DECISION-005:
+  question: What application platform and database should be used?
+  confirmed:
+    hosting_and_compute: Vercel
+    database: Supabase Postgres
+    operator_authentication: Supabase Auth
+    provisioning: Vercel Marketplace when stable for the account
+    ORM: Drizzle ORM for application queries
+    migration_source_of_truth: supabase/migrations SQL files
+  runtime_connection:
+    variable: POSTGRES_URL
+    mode: Supabase transaction pooler
+    prepared_statements: disabled
+  migration_connection:
+    variable: POSTGRES_URL_NON_POOLING
+    use:
+      - Supabase CLI migrations
+      - database dumps
+      - controlled maintenance
+  excluded_platform_services:
+    - Supabase Storage because Shopee images remain remote
+    - Supabase Realtime
+    - Supabase Edge Functions
+    - Supabase pg_cron because Vercel Cron is the scheduler
+    - direct browser access to application tables
+
+DECISION-006:
+  question: How should images be served?
+  confirmed:
+    - Retain authorized Shopee image URLs.
+    - Restrict Next.js image remotePatterns to exact observed Shopee CDN hosts.
+    - Display listing images as-is without edits, color grading, or local cropping.
+    - Use object-fit contain in a stable card image frame.
+    - Provide a local branded placeholder.
+
+DECISION-007:
+  question: What is the visual direction?
+  confirmed: Balanced editorial and e-commerce.
+
+DECISION-008:
+  question: What is the product grid density?
+  confirmed:
+    desktop: four cards per row
+    mobile: two compact cards per row
+
+DECISION-009:
+  question: What appears on a product card?
+  confirmed:
+    - Shopee listing image.
+    - Visually shortened product title.
+  excluded_from_card:
+    - Price.
+    - Original price.
+    - Availability label.
+    - SKU.
+    - Category label.
+    - Badge.
+    - Visible CTA copy.
+  interaction:
+    - Entire card is one accessible external link.
+    - Opens the corresponding Shopee page in a new tab.
+
+DECISION-010:
+  question: What filters are available?
+  confirmed: Categories only.
+
+DECISION-011:
+  question: What public language is used?
+  confirmed: Traditional Chinese with small English brand accents.
+
+DECISION-012:
+  question: Where does the catalog appear?
+  confirmed:
+    - Dedicated new catalog routes only.
+    - Do not modify home, about, location, header, footer, or other existing pages/components.
+
+DECISION-013:
+  question: What operator interface is required?
+  confirmed:
+    - Simple protected single-operator admin page.
+    - Sync status.
+    - Dry-run and full-sync actions.
+    - Audited title-classification include and exclude overrides that cannot
+      bypass active-status or stock gates.
+    - Invite-only Supabase Auth with public signup disabled.
+    - An active app_private.app_admin row is required in addition to a valid
+      Supabase user session.
+
+======================================================================
+6. SOURCE_ACQUISITION_STRATEGIES
+======================================================================
+
+SOURCE_STRATEGY_A:
+  name: Shopee Open Platform Product API
+  priority: primary
+  authorization: seller_authorized
+  expected_data:
+    - item_id
+    - item_status
+    - update_time
+    - category_id
+    - item_name
+    - description if permitted
+    - item_sku
+    - create_time
+    - brand_id
+    - original_brand_name
+    - currency
+    - original_price
+    - current_price
+    - images
+    - stock summary
+  benefits:
+    - Official.
+    - Structured.
+    - Stable relative to storefront HTML.
+    - Contains identifiers required for idempotent synchronization.
+  limitations:
+    - App approval and permissions required.
+    - Short-lived access token.
+    - Quotas and regional requirements apply.
+  disposition: implement
+
+SOURCE_STRATEGY_B:
+  name: Shopee ShopCategory API
+  priority: researched_future_alternative
+  authorization: seller_authorized
+  expected_data:
+    - shop_category_id
+    - shop category name
+    - shop category status
+    - shop category sort weight
+    - item IDs assigned to the category
+  benefits:
+    - Mirrors merchant-configured storefront groupings.
+  limitations:
+    - Different taxonomy from marketplace category_id.
+    - A product can belong to multiple shop categories.
+    - Additional requests and many-to-many persistence.
+  disposition: do_not_implement_in_current_release
+
+SOURCE_STRATEGY_C:
+  name: Shopee push mechanism
+  priority: enhancement
+  behavior:
+    - Consume applicable product change notifications if the app permission and
+      event type are available.
+    - Treat push as an acceleration signal, not as the sole source of truth.
+    - Retain scheduled full reconciliation.
+  disposition: post-MVP unless easy after approval
+
+SOURCE_STRATEGY_D:
+  name: Existing ERP or channel manager
+  priority: alternative
+  condition:
+    - kuSport already uses a system that owns an authorized Shopee connection.
+  required_due_diligence:
+    - API availability.
+    - Field coverage.
+    - Refresh frequency.
+    - Contract and data-use rights.
+    - Stable item_id and category_id availability.
+  disposition: investigate before building a crawler
+
+SOURCE_STRATEGY_E:
+  name: Seller Centre export
+  priority: interim_fallback
+  condition:
+    - A seller-controlled CSV or spreadsheet export exists for the account.
+  implementation:
+    - Define a normalized import adapter.
+    - Validate required columns.
+    - Use the same classifier and database upsert path as the API adapter.
+    - Record source_type=csv and import operator.
+  limitations:
+    - Manual freshness.
+    - Column format can vary.
+    - May not contain full taxonomy or image metadata.
+
+SOURCE_STRATEGY_F:
+  name: Public storefront crawler
+  priority: last_resort
+  prerequisites:
+    - Shopee API path and authorized upstream alternatives are unavailable.
+    - Shopee terms and applicable law have been reviewed.
+    - Crawl rate, scope, and data use are approved.
+  constraints:
+    - No harvested login cookies.
+    - No credential sharing.
+    - No bypassing access controls.
+    - Low request rate.
+    - Strict caching.
+    - Exponential backoff.
+    - Circuit breaker.
+    - Browser-worker infrastructure separate from public request handling.
+  limitations:
+    - JavaScript-heavy site.
+    - Anti-automation measures.
+    - UI and internal payload formats can change.
+    - Vercel Functions are not ideal for long browser sessions.
+  disposition: do not implement for MVP
+
+SOURCE_STRATEGY_G:
+  name: Undocumented Shopee web APIs
+  priority: prohibited_for_production
+  reasons:
+    - Unsupported.
+    - Schema and tokens may change without warning.
+    - Access and terms are unclear.
+    - Creates high operational and compliance risk.
+
+ADAPTER_CONTRACT_RULE:
+  Every accepted source must output the same NormalizedProduct shape before any
+  public catalog write. UI and database services must not depend directly on a
+  Shopee transport response or a CSV row.
+
+======================================================================
+7. SHOPEE_OPEN_PLATFORM_AUTHENTICATION
+======================================================================
+
+Verified official documentation:
+  checked_on: 2026-07-29
+  api_calls_guide:
+    url: https://open.shopee.com/developer-guide/16
+    page_last_updated: 2025-11-21
+  authorization_guide:
+    url: https://open.shopee.com/developer-guide/20
+    page_last_updated: 2026-07-24
+  warning:
+    - The July 2026 authorization guide introduces a new fixed /auth URL.
+    - The same guide still contains legacy signed /api/v2/shop/auth_partner
+      examples and a conflicting timestamp/sign note.
+    - Implement the new /auth flow and prove it in Sandbox.
+    - Do not create a production dependency on the legacy authorization URL.
+
+Production endpoints:
+  authorization_url: https://open.shopee.com/auth
+  api_base_url: https://partner.shopeemobile.com
+  rule:
+    - Use the exact host documented or assigned for the approved Taiwan app.
+    - Do not infer a host from user-controlled input.
+
+Sandbox endpoints:
+  authorization_url: https://open.sandbox.test-stable.shopee.com/auth
+  api_base_url: https://openplatform.sandbox.test-stable.shopee.sg
+  note:
+    - Shopee's current authorization guide contains inconsistent sandbox examples.
+    - Confirm the active sandbox authorization URL in the app Console during proof.
+
+Current authorization URL parameters:
+  partner_id:
+    required: true
+    source: Shopee application
+  auth_type:
+    required: true
+    fixed_for_this_project: seller
+  redirect_uri:
+    required: true
+    production:
+      https://www.dzrzvd.com.tw/api/shopee/auth/callback
+    security:
+      - Configure the matching production callback domain in Shopee Console.
+      - Reject callback-domain mismatches.
+  response_type:
+    required: true
+    fixed_value: code
+  state:
+    required_by_this_implementation: true
+    properties:
+      - cryptographically random
+      - unguessable
+      - one-use
+      - expiring
+      - bound to the administrator session
+
+Authorization URL example:
+  https://open.shopee.com/auth?partner_id={partner_id}&auth_type=seller&redirect_uri={url_encoded_callback}&response_type=code&state={one_use_state}
+
+Authorization callback:
+  expected_parameters:
+    - code
+    - shop_id for shop-account authorization
+    - main_account_id for main-account authorization
+    - state
+  code_rules:
+    one_use: true
+    expires_after_minutes: 10
+  this_project:
+    expected_account_mode: shop_account
+    expected_identifier: shop_id
+    reject_unexpected_account_mode_without_operator_review: true
+
+Required common parameters for shop-level APIs:
+  partner_id:
+    source: Shopee application console
+    exposure: server_only
+  timestamp:
+    format: Unix timestamp
+    validity: approximately five minutes
+  sign:
+    algorithm: HMAC-SHA256
+    key: partner_key
+    output: lowercase_hex
+    shop_api_base_string:
+      partner_id + api_path + timestamp + access_token + shop_id
+  access_token:
+    validity: approximately four hours
+    exposure: server_only
+  shop_id:
+    source: returned through seller authorization
+    persistence: database
+
+Public token endpoint signature:
+  algorithm: HMAC-SHA256
+  key: partner_key
+  output: lowercase_hex
+  base_string:
+    partner_id + api_path + timestamp
+
+Token and authorization lifetimes:
+  authorization_code:
+    validity_minutes: 10
+    one_use: true
+  access_token:
+    validity_hours: 4
+    reusable_during_validity: true
+  refresh_token:
+    validity_days: 30
+    one_use: true
+    replacement_returned_by_every_successful_refresh: true
+  previous_access_token_after_refresh:
+    overlap_minutes: approximately_5
+  seller_authorization:
+    maximum_days: 365
+    seller_can_select_shorter_expiry: true
+    reauthorization_required_after_expiry: true
+
+Authorization flow:
+  1. Administrator requests GET /api/shopee/auth/start.
+  2. Server verifies administrator authorization.
+  3. Server creates random state with expiry, intended shop/market, and nonce.
+  4. Server stores or signs state server-side.
+  5. Server redirects to https://open.shopee.com/auth using the verified current
+     parameters and auth_type=seller.
+  6. Shopee redirects to /api/shopee/auth/callback with code, shop_id, and state.
+  7. Callback validates state, expiry, expected redirect, and replay status.
+  8. Server calls POST /api/v2/auth/token/get using public endpoint signing.
+  9. Server encrypts access and refresh tokens before persistence.
+ 10. Server calls GET /api/v2/shop/get_shop_info.
+ 11. Server verifies shop_name identifies the intended kuSport shop, region=TW,
+     and status=NORMAL.
+ 12. Server writes token and authorization expiry audit metadata without storing
+     the authorization code.
+ 13. Server redirects administrator to a non-secret status page.
+ 14. Administrator initiates a dry-run sync.
+
+Token refresh rules:
+  - Refresh when token expiry is less than 10 minutes away.
+  - Serialize refresh operations with the serverless-safe shop sync lease and
+    a token-row compare-and-swap condition.
+  - Refresh only on the server.
+  - Call POST /api/v2/auth/access_token/get.
+  - Submit partner_id, the latest refresh_token, and shop_id.
+  - Atomically replace access token, refresh token, and both expiry timestamps.
+  - Never reuse a consumed refresh token.
+  - Use compare-and-swap or a database transaction to prevent a stale process
+    from overwriting the newest token pair.
+  - On an upstream token-expired response, refresh once and replay once.
+  - Do not loop indefinitely on authorization failures.
+  - On refresh revocation or invalid refresh token:
+      authorization_status = revoked_or_error
+      catalog = unchanged
+      alert = required
+      operator_action = reauthorize
+
+======================================================================
+8. REQUIRED_SHOPEE_API_OPERATIONS
+======================================================================
+
+API-000:
+  name: Shopee seller authorization URL
+  method: browser_redirect
+  url: https://open.shopee.com/auth
+  documentation:
+    https://open.shopee.com/developer-guide/20
+  required_parameters:
+    - partner_id
+    - auth_type=seller
+    - redirect_uri
+    - response_type=code
+    - state required by this implementation
+  legacy_path_prohibited_for_new_implementation:
+    /api/v2/shop/auth_partner
+
+API-001:
+  name: v2.public.get_access_token
+  method: POST
+  path: /api/v2/auth/token/get
+  documentation:
+    https://open.shopee.com/documents/v2/v2.public.get_access_token?type=1
+  request_body:
+    required:
+      - partner_id
+      - code
+      - shop_id for this project's shop-account authorization
+  purpose:
+    - Exchange one-use authorization code.
+    - Obtain access_token and refresh_token.
+    - Confirm the authorized shop identifier.
+
+API-002:
+  name: v2.public.refresh_access_token
+  method: POST
+  path: /api/v2/auth/access_token/get
+  documentation:
+    https://open.shopee.com/documents/v2/v2.public.refresh_access_token?type=1
+  request_body:
+    required:
+      - partner_id
+      - latest refresh_token
+      - shop_id
+  purpose:
+    - Rotate the four-hour access token.
+    - Rotate the one-use 30-day refresh token.
+  atomicity_required: true
+
+API-003:
+  name: v2.shop.get_shop_info
+  method: GET
+  path: /api/v2/shop/get_shop_info
+  documentation:
+    https://open.shopee.com/documents/v2/v2.shop.get_shop_info?type=1
+  purpose:
+    - Verify shop_name.
+    - Verify region=TW.
+    - Verify shop status=NORMAL.
+    - Record authorization and expiration timestamps.
+  call_policy:
+    - Immediately after authorization.
+    - Periodically before publication.
+
+API-004:
+  name: v2.product.get_item_list
+  method: GET
+  path: /api/v2/product/get_item_list
+  documentation:
+    https://open.shopee.com/documents/v2/v2.product.get_item_list?module=89&type=1
+  purpose:
+    - Enumerate item IDs.
+    - Retrieve item status and source update_time.
+  pagination:
+    page_size_max: 100
+    cursor: next_offset
+    continuation: has_next_page
+  statuses_to_consider:
+    - NORMAL
+    - BANNED
+    - UNLIST
+    - REVIEWING
+    - SELLER_DELETE
+    - SHOPEE_DELETE
+  incremental_parameters:
+    - update_time_from
+    - update_time_to
+  implementation:
+    - For first full sync, enumerate the status set necessary for a complete
+      inventory and soft-deletion reconciliation.
+    - For later incremental syncs, use source update-time windows with overlap.
+
+API-005:
+  name: v2.product.get_item_base_info
+  method: GET
+  path: /api/v2/product/get_item_base_info
+  documentation:
+    https://open.shopee.com/documents/v2/v2.product.get_item_base_info?module=89&type=1
+  purpose:
+    - Retrieve category_id.
+    - Retrieve item_name and item_sku.
+    - Retrieve brand object and original_brand_name.
+    - Retrieve currency and prices.
+    - Retrieve image URLs.
+    - Retrieve stock summary.
+    - Retrieve create and update metadata.
+  batching:
+    verified_maximum_item_ids: 50
+    - Chunk item IDs to at most 50.
+    - Make 50 a named constant tied to the verified contract.
+    - Unit-test boundary behavior.
+  required_fields_for_public_catalog:
+    - item_id
+    - category_id
+    - item_name
+    - update_time
+    - image.image_url_list
+    - stock_info_v2.summary_info.total_available_stock
+  validation:
+    - Permit missing optional fields.
+    - Reject structurally invalid required identifiers.
+    - Record response warning and request_id.
+
+API-006:
+  name: v2.product.get_category
+  method: GET
+  path: /api/v2/product/get_category
+  documentation:
+    https://open.shopee.com/documents/v2/v2.product.get_category?module=89&type=1
+  response_fields:
+    - category_id
+    - parent_category_id
+    - original_category_name
+    - display_category_name
+    - has_children
+  request:
+    language: zh-hant
+    query_example: language=zh-hant
+    market_support_verified: TW supports en and zh-hant
+  refresh_policy:
+    - Refresh before initial import.
+    - Refresh weekly.
+    - Refresh once immediately when an item returns an unknown category_id.
+  normalization:
+    - Compute breadcrumb from root to leaf.
+    - Detect cycles defensively.
+    - Set a maximum traversal depth.
+
+API-007:
+  name: v2.product.get_model_list
+  method: GET
+  path: /api/v2/product/get_model_list
+  documentation:
+    https://open.shopee.com/documents/v2/v2.product.get_model_list?module=89&type=1
+  conditional: true
+  current_release: false
+  purpose:
+    - Retrieve variant model_status and variant stock when product-level stock
+      is missing or demonstrably inconsistent.
+  do_not_call_when:
+    - get_item_base_info returns a valid product-level total_available_stock.
+    - No variant data is displayed publicly.
+
+NOT_USED_IN_MVP:
+  - v2.shop_category.get_shop_category_list
+  - v2.shop_category.get_item_list
+  - product write APIs
+  - price and stock write APIs
+  - order, buyer, logistics, and marketing APIs
+  - undocumented storefront APIs
+  - browser scraping
+  - push notifications as the source of truth
+
+PUSH_POLICY:
+  daily_full_reconciliation_remains_required: true
+  optional_future_behavior:
+    - A supported product or stock push may enqueue a targeted refresh.
+    - Push processing must be idempotent and duplicate-safe.
+    - Lost, delayed, or out-of-order push messages must not damage catalog state.
+  reviewed_example:
+    url: https://open.shopee.com/push-mechanism/5
+    event: reserved_stock_change_push
+    limitation:
+      - Reserved-stock changes alone do not provide title, category, complete
+        listing status, or authoritative full-catalog reconciliation.
+
+APPLICATION_ROUTE_CONTRACTS:
+  GET /api/shopee/auth/start:
+    access: authenticated_admin
+    responsibility:
+      - Create one-use state.
+      - Redirect to the current Shopee /auth URL.
+    response_rule:
+      - Do not return credentials or a reusable authorization URL as JSON.
+
+  GET /api/shopee/auth/callback:
+    access: Shopee redirect with one-use state
+    responsibility:
+      - Validate state and replay protection.
+      - Exchange code.
+      - Verify kuSport shop, region=TW, and status=NORMAL.
+      - Store encrypted token pair and expiries.
+
+  GET /api/cron/shopee-sync:
+    access: exact Bearer CRON_SECRET
+    responsibility: daily full reconciliation
+    safe_response:
+      - run_id
+      - status
+      - summary counts
+
+  GET /api/admin/shopee/status:
+    access: authenticated_admin
+    responsibility:
+      - Authorization status.
+      - Token and authorization expiry warnings.
+      - Shop status.
+      - Latest sync health and safe errors.
+
+  POST /api/admin/shopee/sync:
+    access: authenticated_admin
+    input:
+      mode:
+        - dry_run
+        - full
+    responsibility:
+      - Use the same row-lease, validation, and publication service as cron.
+
+  PATCH /api/admin/products/{item_id}/override:
+    access: authenticated_admin
+    input:
+      - decision include, exclude, or clear
+      - required reason for include or exclude
+    responsibility:
+      - Change title classification only.
+      - Never bypass status, stock, or safe-link gates.
+
+  GET /api/catalog/categories:
+    access: public_optional_json
+    source: normalized database/cache only
+    response:
+      - visible marketplace categories
+      - localized labels
+      - public product counts
+
+  GET /api/catalog/products:
+    access: public_optional_json
+    query:
+      - optional category_id
+      - bounded pagination
+    source: normalized database/cache only
+    visibility_predicate:
+      - is_dzrzvd=true
+      - status=NORMAL
+      - inactive_at is null
+      - available_stock greater than zero
+      - safe canonical URL
+    note:
+      - Next.js Server Components may call the catalog repository directly and
+        do not need to make an internal HTTP request.
+
+Shopee HTTP client behavior:
+  timeouts:
+    connect_ms: explicit
+    response_ms: explicit
+    overall_sync_budget_ms: less_than_vercel_function_limit
+  retries:
+    maximum_attempts: 3 for retryable calls
+    algorithm: exponential_backoff_with_jitter
+    retryable:
+      - transient network error
+      - HTTP 429
+      - retryable HTTP 5xx
+      - documented transient Shopee error
+    not_retryable_without_correction:
+      - invalid signature
+      - invalid partner_id
+      - invalid shop_id
+      - missing permission
+      - invalid parameter
+      - revoked authorization
+  observability:
+    capture:
+      - Shopee request_id
+      - endpoint path
+      - duration_ms
+      - attempt number
+      - normalized error code
+      - warning presence
+      - non-empty Shopee error field even when HTTP status is 200
+    never_capture:
+      - partner_key
+      - access_token
+      - refresh_token
+      - authorization code
+      - complete signature base string
+      - sign
+  concurrency:
+    initial_maximum_in_flight_requests: 2_to_4
+    tuning_source: approved_application_quotas_and_observed_rate_limits
+
+======================================================================
+9. TARGET_ARCHITECTURE
+======================================================================
+
+Component flow:
+  Shopee Open Platform
+    -> signed server-side ShopeeClient
+    -> SyncService
+    -> normalization and classification
+    -> Supabase Postgres transaction
+    -> tagged catalog cache invalidation
+    -> Next.js Server Component catalog
+    -> visitor
+
+Runtime responsibilities:
+  Vercel:
+    - Next.js hosting and CDN.
+    - Node.js Route Handlers and Server Components.
+    - Daily Cron trigger.
+    - Environment-scoped secrets.
+    - Runtime logs and cache revalidation.
+
+  Supabase:
+    - Managed PostgreSQL.
+    - Supavisor transaction pooler for Vercel runtime SQL.
+    - Non-pooled/direct connection for migrations and maintenance.
+    - Invite-only Supabase Auth for the operator.
+    - Dashboard, backups, and optional PITR.
+    - No Storage, Realtime, Edge Functions, or pg_cron in MVP.
+
+  ShopeeClient:
+    - Signing.
+    - Token-aware request creation.
+    - Timeouts.
+    - Retry classification.
+    - Response transport schemas.
+    - Upstream request_id capture.
+
+  ShopeeAuthService:
+    - Authorization state.
+    - Code exchange.
+    - Token encryption and rotation.
+    - Authorization audit status.
+
+  SupabaseAuthBoundary:
+    - @supabase/ssr cookie clients.
+    - Server-side supabase.auth.getUser validation.
+    - app_private.app_admin allowlist lookup.
+    - Public signup disabled.
+    - No use of SUPABASE_SECRET_KEY in browser code.
+
+  ShopeeSyncService:
+    - Run creation.
+    - Lock acquisition.
+    - Taxonomy refresh decision.
+    - Item pagination.
+    - Detail batching.
+    - Normalization.
+    - Classification.
+    - Transactional upsert.
+    - Missing-product reconciliation.
+    - Run completion.
+    - Cache invalidation.
+
+  CatalogRepository:
+    - Stable normalized queries.
+    - Category grouping.
+    - Public visibility rules.
+    - Last successful sync metadata.
+
+  CatalogServerComponents:
+    - No Shopee credentials.
+    - No Shopee live requests.
+    - Render normalized data.
+    - Keep client JavaScript minimal.
+
+Reliability boundaries:
+  - An upstream failure cannot mutate existing public catalog records partially.
+  - A database failure cannot trigger cache invalidation.
+  - A render request cannot initiate synchronization.
+  - Missing upstream data is not interpreted as deletion during a failed scan.
+  - A source adapter cannot write directly to React UI state.
+  - Preview deployments cannot connect to production Supabase.
+  - Transaction-pooled runtime code cannot depend on prepared statements,
+    session variables, temporary tables, or session advisory locks.
+
+Platform topology:
+  production_function_region: sin1 when supported by the selected Vercel plan
+  production_database_region: closest matching Supabase Singapore region
+  rule:
+    - Co-locate compute and database whenever possible.
+    - Vercel Functions otherwise default to iad1.
+  environments:
+    production:
+      - Dedicated production Supabase project.
+      - Production Vercel environment variables only.
+    preview:
+      - Separate non-production Supabase project by default.
+      - Branch-scoped Preview variables on Vercel Hobby.
+      - Dedicated Vercel environment and/or Supabase Branching may be used on
+        plans that support those features.
+    development:
+      - Local Supabase CLI stack or isolated development project.
+
+======================================================================
+10. NORMALIZED_DOMAIN_CONTRACTS
+======================================================================
+
+Type: ShopeeId
+  runtime_representation: string
+  database_representation: BIGINT
+  reason:
+    - Shopee IDs can exceed JavaScript's safe integer range.
+    - JSON parsing must not silently round identifiers.
+
+Type: NormalizedProduct
+  fields:
+    itemId: ShopeeId
+    shopId: ShopeeId
+    categoryId: ShopeeId or null
+    name: string
+    itemSku: string or null
+    brandId: ShopeeId or null
+    brandName: string or null
+    currency: ISO_4217_string
+    originalPrice: decimal_string or null
+    currentPrice: decimal_string or null
+    priceMin: decimal_string or null
+    priceMax: decimal_string or null
+    availableStock: integer or null
+    status: normalized_status
+    imageUrls: ordered_string_array
+    canonicalUrl: absolute_https_url
+    sourceUpdateTime: ISO_8601_timestamp or null
+    sourcePayload: redacted_json_optional
+
+Type: ClassifiedProduct
+  extends: NormalizedProduct
+  fields:
+    isDzrzvd: boolean
+    matchMethod:
+      - manual_include
+      - manual_exclude
+      - title_alias
+      - title_not_matched
+    matchEvidence: redacted_short_string_or_null
+    classificationVersion: string
+
+Type: NormalizedCategory
+  fields:
+    categoryId: ShopeeId
+    parentCategoryId: ShopeeId or null
+    originalName: string
+    displayName: string
+    hasChildren: boolean
+    breadcrumb: ordered_string_array
+    depth: integer
+
+Type: SyncResult
+  fields:
+    runId: UUID
+    status:
+      - succeeded
+      - failed
+      - skipped_locked
+      - dry_run
+    trigger:
+      - cron
+      - manual
+      - authorization
+      - webhook
+      - local
+    mode:
+      - full
+      - incremental
+      - dry_run
+    discoveredCount: integer
+    enrichedCount: integer
+    includedCount: integer
+    excludedCount: integer
+    insertedCount: integer
+    updatedCount: integer
+    inactivatedCount: integer
+    warningCount: integer
+    startedAt: timestamp
+    finishedAt: timestamp
+    safeErrorSummary: string or null
+
+======================================================================
+11. DATABASE_SCHEMA
+======================================================================
+
+Database:
+  engine: PostgreSQL
+  provider: Supabase
+  provisioning:
+    primary: Vercel Marketplace Supabase integration
+    fallback:
+      - Create or use an existing Supabase project.
+      - Configure the same variables manually in Vercel.
+    note:
+      - Supabase documents its Vercel Marketplace integration as Public Alpha
+        at this revision.
+  application_query_layer: Drizzle ORM
+  migration_source_of_truth: supabase/migrations/*.sql
+  migration_tool: Supabase CLI
+  runtime_connection:
+    variable: POSTGRES_URL
+    mode: Supavisor transaction pooler
+    driver_requirements:
+      - prepared statements disabled
+      - short transactions
+      - no session state assumptions
+  migration_connection:
+    variable: POSTGRES_URL_NON_POOLING
+    scope:
+      - Supabase CLI migration push
+      - dumps and restores
+      - controlled maintenance
+  schemas:
+    catalog:
+      exposure: not exposed through Data API
+      tables:
+        - shopee_category
+        - shopee_product
+        - category_presentation
+    app_private:
+      exposure: not exposed through Data API
+      tables:
+        - shopee_shop
+        - sync_run
+        - sync_request
+        - product_filter_override
+        - sync_lock
+        - app_admin
+  grants:
+    anon: none on application schemas
+    authenticated: none on application schemas
+  access:
+    - Next.js server-only SQL repositories.
+    - Browser uses Supabase only for Auth session flows.
+  migration_policy:
+    - Create every schema change first as a timestamped file in
+      supabase/migrations.
+    - Validate locally with supabase db reset and automated tests.
+    - Apply to non-production before production with supabase db push.
+    - Do not maintain a second Drizzle migration history.
+    - Do not make unrecorded production Dashboard schema edits after the migration
+      workflow is established.
+  backup_policy:
+    - Paid Supabase projects use scheduled backups; enable PITR when the recovery
+      point objective requires it.
+    - Free projects require regular encrypted off-site logical dumps.
+    - Test restore into an isolated non-production project.
+    - Database backups do not protect Vercel environment secrets; maintain a
+      separate recovery procedure for encryption keys and Shopee credentials.
+
+TABLE shopee_shop:
+  schema: app_private
+  id:
+    type: UUID
+    primary_key: true
+    default: generated
+  shop_id:
+    type: BIGINT
+    unique: true
+    nullable: false
+  market:
+    type: TEXT
+    default: TW
+    nullable: false
+  shop_name:
+    type: TEXT
+    nullable: true
+  access_token_ciphertext:
+    type: TEXT
+    nullable: false_after_authorization
+  refresh_token_ciphertext:
+    type: TEXT
+    nullable: false_after_authorization
+  token_expires_at:
+    type: TIMESTAMPTZ
+    nullable: false_after_authorization
+  refresh_token_expires_at:
+    type: TIMESTAMPTZ
+    nullable: false_after_authorization
+    purpose: 30_day_rotation_and_alerting
+  authorized_at:
+    type: TIMESTAMPTZ
+    nullable: false_after_authorization
+  authorization_expires_at:
+    type: TIMESTAMPTZ
+    nullable: false_after_authorization
+    maximum_from_authorization: 365_days
+  shop_status:
+    type: TEXT
+    nullable: true_until_verified
+    allowed_values:
+      - NORMAL
+      - BANNED
+      - FROZEN
+  last_token_refresh_at:
+    type: TIMESTAMPTZ
+    nullable: true
+  last_sync_at:
+    type: TIMESTAMPTZ
+    nullable: true
+  authorization_status:
+    type: TEXT
+    allowed_values:
+      - active
+      - expired
+      - revoked
+      - error
+  created_at:
+    type: TIMESTAMPTZ
+    default: now
+  updated_at:
+    type: TIMESTAMPTZ
+    default: now
+
+TABLE shopee_category:
+  schema: catalog
+  category_id:
+    type: BIGINT
+    primary_key: true
+  parent_category_id:
+    type: BIGINT
+    nullable: true
+    index: true
+  original_name:
+    type: TEXT
+    nullable: false
+  display_name:
+    type: TEXT
+    nullable: false
+  has_children:
+    type: BOOLEAN
+    nullable: false
+  breadcrumb:
+    type: TEXT_ARRAY
+    nullable: false
+  depth:
+    type: SMALLINT
+    nullable: false
+  source_updated_at:
+    type: TIMESTAMPTZ
+    nullable: false
+  created_at:
+    type: TIMESTAMPTZ
+    default: now
+  updated_at:
+    type: TIMESTAMPTZ
+    default: now
+
+TABLE shopee_product:
+  schema: catalog
+  item_id:
+    type: BIGINT
+    primary_key: true
+  shop_id:
+    type: BIGINT
+    foreign_key: shopee_shop.shop_id
+    index: true
+  category_id:
+    type: BIGINT
+    foreign_key: shopee_category.category_id
+    nullable: true
+    index: true
+  name:
+    type: TEXT
+    nullable: false
+  item_sku:
+    type: TEXT
+    nullable: true
+    index: true
+  brand_id:
+    type: BIGINT
+    nullable: true
+  brand_name:
+    type: TEXT
+    nullable: true
+    index: true
+  currency:
+    type: CHAR_3
+    default: TWD
+  original_price:
+    type: NUMERIC_14_2
+    nullable: true
+  current_price:
+    type: NUMERIC_14_2
+    nullable: true
+  price_min:
+    type: NUMERIC_14_2
+    nullable: true
+  price_max:
+    type: NUMERIC_14_2
+    nullable: true
+  available_stock:
+    type: INTEGER
+    nullable: true
+  status:
+    type: TEXT
+    nullable: false
+    index: true
+  image_urls:
+    type: TEXT_ARRAY
+    default: empty_array
+  canonical_url:
+    type: TEXT
+    nullable: false
+  is_dzrzvd:
+    type: BOOLEAN
+    nullable: false
+    index: true
+  match_method:
+    type: TEXT
+    nullable: true
+  match_evidence:
+    type: TEXT
+    nullable: true
+  classification_version:
+    type: TEXT
+    nullable: false
+  source_update_time:
+    type: TIMESTAMPTZ
+    nullable: true
+    index: true
+  first_seen_at:
+    type: TIMESTAMPTZ
+    nullable: false
+  last_seen_at:
+    type: TIMESTAMPTZ
+    nullable: false
+    index: true
+  inactive_at:
+    type: TIMESTAMPTZ
+    nullable: true
+  source_payload:
+    type: JSONB
+    nullable: true
+    retention: short
+  created_at:
+    type: TIMESTAMPTZ
+    default: now
+  updated_at:
+    type: TIMESTAMPTZ
+    default: now
+
+TABLE sync_run:
+  schema: app_private
+  id:
+    type: UUID
+    primary_key: true
+  shop_id:
+    type: BIGINT
+    foreign_key: shopee_shop.shop_id
+  trigger:
+    type: TEXT
+  mode:
+    type: TEXT
+  status:
+    type: TEXT
+    allowed_values:
+      - running
+      - succeeded
+      - failed
+      - skipped_locked
+      - dry_run
+  started_at:
+    type: TIMESTAMPTZ
+  finished_at:
+    type: TIMESTAMPTZ
+    nullable: true
+  discovered_count:
+    type: INTEGER
+    default: 0
+  enriched_count:
+    type: INTEGER
+    default: 0
+  included_count:
+    type: INTEGER
+    default: 0
+  excluded_count:
+    type: INTEGER
+    default: 0
+  inserted_count:
+    type: INTEGER
+    default: 0
+  updated_count:
+    type: INTEGER
+    default: 0
+  inactivated_count:
+    type: INTEGER
+    default: 0
+  warning_count:
+    type: INTEGER
+    default: 0
+  endpoint_request_count:
+    type: INTEGER
+    default: 0
+  safe_error_summary:
+    type: TEXT
+    nullable: true
+  deployment_id:
+    type: TEXT
+    nullable: true
+
+TABLE product_filter_override:
+  schema: app_private
+  item_id:
+    type: BIGINT
+    primary_key: true
+    foreign_key: shopee_product.item_id_optional
+  decision:
+    type: TEXT
+    allowed_values:
+      - include
+      - exclude
+    scope: title_classification_only
+    cannot_bypass:
+      - status must equal NORMAL
+      - available_stock must be known and greater than zero
+      - canonical URL must be safe and valid
+  reason:
+    type: TEXT
+    nullable: false
+  created_by:
+    type: UUID
+    nullable: false
+    foreign_key: app_admin.user_id
+  created_at:
+    type: TIMESTAMPTZ
+  updated_at:
+    type: TIMESTAMPTZ
+
+TABLE category_presentation:
+  schema: catalog
+  category_id:
+    type: BIGINT
+    primary_key: true
+    foreign_key: shopee_category.category_id
+  slug:
+    type: TEXT
+    unique: true
+  custom_label:
+    type: TEXT
+    nullable: true
+  description:
+    type: TEXT
+    nullable: true
+  hero_image_url:
+    type: TEXT
+    nullable: true
+  sort_order:
+    type: INTEGER
+    default: 0
+  visible:
+    type: BOOLEAN
+    default: true
+
+TABLE sync_lock:
+  schema: app_private
+  shop_id:
+    type: BIGINT
+    primary_key: true
+    foreign_key: shopee_shop.shop_id
+  owner_run_id:
+    type: UUID
+    nullable: false
+    foreign_key: sync_run.id
+  acquired_at:
+    type: TIMESTAMPTZ
+    nullable: false
+  heartbeat_at:
+    type: TIMESTAMPTZ
+    nullable: false
+  locked_until:
+    type: TIMESTAMPTZ
+    nullable: false
+    index: true
+  acquisition:
+    - Atomically insert the row or replace it only when locked_until is earlier
+      than database now().
+    - Return the row and continue only when owner_run_id matches this run.
+  heartbeat:
+    - Extend locked_until between Shopee batches while owner_run_id still matches.
+  release:
+    - Delete only where shop_id and owner_run_id both match.
+
+TABLE app_admin:
+  schema: app_private
+  user_id:
+    type: UUID
+    primary_key: true
+    foreign_key: auth.users.id
+  role:
+    type: TEXT
+    allowed_values:
+      - operator
+  active:
+    type: BOOLEAN
+    default: true
+  created_at:
+    type: TIMESTAMPTZ
+    default: now
+  updated_at:
+    type: TIMESTAMPTZ
+    default: now
+  last_verified_at:
+    type: TIMESTAMPTZ
+    nullable: true
+
+FUTURE_NOT_IMPLEMENTED TABLE shop_category:
+  shop_category_id:
+    type: BIGINT
+    primary_key: true
+  shop_id:
+    type: BIGINT
+    foreign_key: shopee_shop.shop_id
+  name:
+    type: TEXT
+  status:
+    type: INTEGER
+  sort_weight:
+    type: INTEGER
+  source_updated_at:
+    type: TIMESTAMPTZ
+
+FUTURE_NOT_IMPLEMENTED TABLE shop_category_item:
+  shop_category_id:
+    type: BIGINT
+    foreign_key: shop_category.shop_category_id
+  item_id:
+    type: BIGINT
+    foreign_key: shopee_product.item_id
+  primary_key:
+    - shop_category_id
+    - item_id
+
+Required database constraints:
+  - item_id is unique.
+  - shop_id is unique in shopee_shop.
+  - category hierarchy cannot be trusted blindly; compute paths defensively.
+  - Price values must not use floating-point application storage.
+  - Public queries select is_dzrzvd=true.
+  - Public queries require status=NORMAL.
+  - Public queries require inactive_at IS NULL.
+  - Public queries require available_stock greater than zero.
+  - Products with zero, negative, or unknown stock remain stored but hidden.
+
+Recommended indexes:
+  - shopee_product(is_dzrzvd, inactive_at, status)
+  - shopee_product(category_id, is_dzrzvd, inactive_at)
+  - shopee_product(shop_id, last_seen_at)
+  - shopee_product(source_update_time)
+  - shopee_product(brand_name)
+  - shopee_category(parent_category_id)
+  - sync_run(shop_id, started_at desc)
+
+Raw payload retention:
+  recommended_days: 30
+  conditions:
+    - Raw payloads are optional.
+    - Redact unexpected sensitive fields.
+    - Do not store buyer or order data.
+    - Do not store tokens or signatures.
+
+======================================================================
+12. DZRZVD_CLASSIFICATION
+======================================================================
+
+Reason:
+  kuSport is a mixed-brand store. Incorrect automatic inclusion is a catalog and
+  brand-integrity defect.
+
+Normalization function:
+  input: string
+  operations:
+    - Unicode normalization, recommended NFKC after validation.
+    - Convert full-width forms where appropriate.
+    - Trim leading and trailing whitespace.
+    - Collapse repeated whitespace.
+    - Convert to a comparison case.
+    - Normalize punctuation for matching only.
+    - Preserve original display text separately.
+
+Configuration:
+  title_tokens:
+    - DZRZVD
+    - 杜戛地
+  classification_version:
+    - Increment whenever title tokens, normalization, or override semantics change.
+
+Rule order:
+  RULE-1:
+    if: product_filter_override exists
+    result: override decision
+    match_method: manual_include or manual_exclude
+
+  RULE-2:
+    if: normalized product title contains "DZRZVD" using case-insensitive Latin comparison
+    result: include
+    match_method: title_alias
+
+  RULE-3:
+    if: normalized product title contains "杜戛地"
+    result: include
+    match_method: title_alias
+
+  RULE-4:
+    otherwise: exclude
+    match_method: title_not_matched
+
+Safety rules:
+  - Do not use Shopee brand, description, category, or SKU to include an item.
+  - Never fuzzy-match an item directly into the public catalog.
+  - Record classification reason and version.
+  - Alert when included catalog count drops or grows by more than 30% compared
+    with the previous successful run.
+  - Alert when included count is zero.
+  - Provide audited title-classification include and exclude controls in the
+    protected admin page.
+  - Never allow an override to bypass status=NORMAL or confirmed stock above zero.
+
+======================================================================
+13. CATEGORY_GROUPING
+======================================================================
+
+Marketplace category mode:
+  configuration_value: marketplace
+  status: confirmed_and_only_mode_for_current_release
+  relationship:
+    - One product has one Shopee category_id.
+    - A category can have one parent.
+    - /products renders marketplace category overview sections.
+    - /products/[categorySlug] renders a separate page for a visible category.
+    - Category is the only visitor filtering dimension.
+  path_algorithm:
+    1. Start at product.category_id.
+    2. Add current display_name.
+    3. Follow parent_category_id.
+    4. Stop at null or root sentinel.
+    5. Reverse collected names.
+    6. Reject a repeated category ID as a cycle.
+    7. Stop and warn above a safe maximum depth.
+  unknown_category_behavior:
+    1. Refresh taxonomy once.
+    2. Persist product with diagnostic flag if still unresolved.
+    3. Place product in a low-priority "Other" category.
+    4. Emit warning.
+
+Shop category mode:
+  configuration_value: shop-category
+  status: not_implemented_in_current_release
+  relationship:
+    - One product may appear in many seller-defined categories.
+    - Persist many-to-many membership.
+    - Use shop category status and sort_weight.
+  public_behavior:
+    - None in the current release.
+    - Retain documentation as future research only.
+
+Presentation override rule:
+  - Source category identity and hierarchy are immutable integration data.
+  - Human-facing label, description, slug, visibility, order, and hero media are
+    local presentation data.
+  - Never overwrite source category names merely to change the website label.
+
+======================================================================
+14. SYNCHRONIZATION_ALGORITHM
+======================================================================
+
+FULL_SYNC:
+  step_01:
+    action: Authenticate trigger.
+    cron_requirement:
+      Authorization header exactly equals Bearer + CRON_SECRET.
+    failure:
+      status_code: 401
+      no_database_or_shopee_work: true
+
+  step_02:
+    action: Create sync_run with status=running.
+    capture:
+      - trigger
+      - mode=full
+      - started_at
+      - deployment_id
+
+  step_03:
+    action: Acquire the app_private.sync_lock row lease keyed by shop_id.
+    acquisition:
+      - Generate owner_run_id from the current sync_run.
+      - Atomically insert the lease or take it only when locked_until is expired.
+      - Use database time and a bounded lease duration.
+    if_locked:
+      sync_status: skipped_locked
+      side_effects: none
+    rationale:
+      - Vercel runtime SQL uses Supavisor transaction pooling.
+      - Session advisory locks are unsafe because later statements may use
+        different database sessions.
+
+  step_04:
+    action: Load shop authorization and ensure token freshness.
+    refresh_threshold_minutes: 10
+    refresh_atomicity:
+      - Hold and heartbeat the shop-level row lease.
+      - Use only the latest one-use refresh token.
+      - Replace access token, refresh token, and expiries in one transaction.
+      - Use a compare-and-swap condition against the encrypted refresh-token
+        version or token updated_at value.
+      - Never allow a stale process to overwrite the new token pair.
+
+  step_05:
+    action: Verify shop and refresh marketplace categories if stale.
+    shop_verification:
+      endpoint: /api/v2/shop/get_shop_info
+      required:
+        - intended kuSport shop identity
+        - region=TW
+        - status=NORMAL
+    category_request:
+      endpoint: /api/v2/product/get_category
+      language: zh-hant
+      stale_after_days: 7
+
+  step_06:
+    action: Paginate get_item_list for required statuses.
+    requirements:
+      - Follow next_offset until has_next_page=false.
+      - Deduplicate item IDs.
+      - Preserve item status and update_time.
+      - Detect unexpected pagination loops.
+
+  step_07:
+    action: Decide which products need base info.
+    full_mode:
+      - Fetch NORMAL items unless a safe optimization uses unchanged source update_time.
+      - Preserve non-NORMAL item status for audit and public hiding.
+    correctness_priority:
+      - Favor complete validated details over premature request minimization.
+
+  step_08:
+    action: Batch get_item_base_info.
+    batch_size_maximum: 50
+    lease_rule:
+      - Heartbeat sync_lock between successful Shopee batches.
+      - Abort safely if the process no longer owns the lease.
+    failure_rule:
+      - Any irrecoverable batch failure fails full sync.
+      - Do not proceed to missing-product inactivation.
+
+  step_09:
+    action: Normalize all valid item records.
+    validation:
+      - ID precision.
+      - HTTPS image and product URLs.
+      - Decimal prices.
+      - Timestamp conversion.
+      - Empty optional fields.
+      - Status mapping.
+      - image.image_url_list[0] as the public listing image.
+      - stock_info_v2.summary_info.total_available_stock as the product-level
+        public stock gate.
+
+  step_10:
+    action: Classify DZRZVD.
+    record:
+      - is_dzrzvd
+      - match_method
+      - classification_version
+    default_rule:
+      - Normalized title contains DZRZVD or 杜戛地.
+      - Audited manual title-classification override wins.
+      - Override cannot bypass status=NORMAL.
+      - Override cannot bypass confirmed available_stock greater than zero.
+
+  step_11:
+    action: Resolve category paths.
+    unknown_behavior: refresh_once_then_other_group_and_warning
+
+  step_12:
+    action: Validate run-level invariants.
+    invariants:
+      - discovered_count greater than or equal to enriched_count as expected.
+      - no duplicate item IDs.
+      - every included product has non-empty name.
+      - every included product has safe canonical URL.
+      - included count anomaly is flagged.
+      - public visibility requires NORMAL status, inactive_at null, and confirmed
+        available_stock greater than zero.
+
+  step_13:
+    action: Begin database transaction.
+    writes:
+      - Upsert categories.
+      - Upsert products.
+      - Set last_seen_at to run.started_at for observed items.
+      - Preserve first_seen_at on updates.
+      - Set inactive_at=null for rediscovered active items.
+
+  step_14:
+    action: Mark unseen products inactive.
+    precondition:
+      - Full enumeration and enrichment completed successfully.
+    filter:
+      - Same shop.
+      - Previously active.
+      - last_seen_at older than current run.started_at.
+    prohibited:
+      - Hard delete.
+      - Inactivation after a partial or failed scan.
+
+  step_15:
+    action: Complete sync_run in same or subsequent safe transaction.
+    fields:
+      - status=succeeded
+      - finished_at
+      - counts
+      - warning_count
+      - endpoint_request_count
+      - Shopee request IDs for failed or warned calls
+
+  step_16:
+    action: Update shopee_shop.last_sync_at.
+
+  step_17:
+    action: Commit.
+
+  step_18:
+    action: Revalidate catalog cache.
+    tag: shopee-catalog
+    precondition: committed successful write
+
+  step_19:
+    action: Release sync_lock in finally only when owner_run_id still matches.
+
+  step_20:
+    action: Return safe response.
+    include:
+      - run_id
+      - status
+      - summary counts
+    exclude:
+      - tokens
+      - signatures
+      - partner key
+      - raw upstream body
+
+INCREMENTAL_SYNC:
+  use_after:
+    - Full sync correctness is proven.
+  inputs:
+    - Last committed source watermark.
+    - update_time_from and update_time_to.
+  overlap_minutes: 5
+  rules:
+    - Never advance watermark before database commit.
+    - Repeated items are safe because writes are idempotent.
+    - Incremental sync does not replace periodic full reconciliation.
+    - Do not infer deletion from absence in an incremental window.
+
+DRY_RUN:
+  purpose:
+    - Compare API result and classification without changing public records.
+  writes_allowed:
+    - sync_run and safe diagnostics.
+  writes_prohibited:
+    - Product visibility changes.
+    - Category presentation changes.
+    - Cache invalidation.
+
+IDEMPOTENCY_INVARIANTS:
+  - item_id is the product write key.
+  - Replaying the same upstream payload creates no duplicate product.
+  - Replaying category data creates no duplicate category.
+  - Marketplace category identity is category_id and parent relationships are
+    updated without duplicate rows.
+  - Token refresh is serialized.
+  - Refresh token replacement is atomic and stale refresh results cannot win.
+  - Sync is serialized per shop.
+  - Cache invalidation follows commit.
+
+======================================================================
+15. SCHEDULING_AND_RECOVERY
+======================================================================
+
+Recommended vercel.json:
+  {
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "regions": ["sin1"],
+    "crons": [
+      {
+        "path": "/api/cron/shopee-sync",
+        "schedule": "0 18 * * *"
+      }
+    ]
+  }
+
+Timezone:
+  vercel_cron_timezone: UTC
+  expression: 0 18 * * *
+  approximate_taipei_time: 02:00 next calendar day
+
+Vercel plan behavior:
+  Hobby:
+    minimum_interval: once_per_day
+    precision: within_scheduled_hour
+  Pro:
+    minimum_interval: once_per_minute
+    recommended_if:
+      - Product owner requires sub-daily freshness.
+      - Request volume and function limits are understood.
+
+Cron security:
+  environment_variable: CRON_SECRET
+  minimum_recommendation: 32 random bytes
+  expected_header: Authorization: Bearer ${CRON_SECRET}
+  invalid_response: HTTP 401
+
+Concurrency:
+  control: app_private.sync_lock expiring row lease
+  scope: per shop_id
+  overlapping_result: skipped_locked
+  stale_lock_behavior:
+    - A crashed worker stops heartbeats and the lease becomes reclaimable after
+      locked_until.
+    - Release and heartbeat statements must match owner_run_id.
+    - Never hold a database transaction open across Shopee HTTP requests.
+  prohibited:
+    - Session advisory locks.
+    - Temporary-table or session-variable lock state.
+
+Failure matrix:
+  network_timeout:
+    automatic: retry maximum three attempts with jitter
+    catalog_change: none if final failure
+
+  upstream_5xx:
+    automatic: bounded retry
+    catalog_change: none if final failure
+
+  upstream_429:
+    automatic: honor retry guidance and reduce rate
+    catalog_change: none if final failure
+
+  expired_access_token:
+    automatic: refresh once and replay once
+
+  revoked_authorization:
+    automatic: stop
+    catalog_change: none
+    operator: reauthorize
+
+  partial_detail_batch_failure:
+    automatic: fail run
+    missing_product_inactivation: prohibited
+
+  database_unavailable:
+    automatic: abort
+    cache_invalidation: prohibited
+
+  overlapping_job:
+    automatic: skip
+    operator: none unless recurring unexpectedly
+
+  category_unknown:
+    automatic: refresh taxonomy once
+    fallback: "Other" group plus warning
+
+Manual recovery route:
+  path: /api/admin/shopee/sync
+  access:
+    - Administrator authentication required.
+    - Rate limited.
+    - CSRF-safe if browser-invoked.
+  supported_modes:
+    - dry_run
+    - full
+  response:
+    - run ID.
+    - Safe status.
+  never_return:
+    - Credentials.
+    - Complete raw Shopee response.
+
+======================================================================
+16. PUBLIC_WEBSITE_SPECIFICATION_SUMMARY
+======================================================================
+
+Primary route:
+  path: /products
+  label: 商品系列
+  rendering: Server Component
+  data_source: CatalogRepository
+  live_shopee_request: prohibited
+  purpose:
+    - Dedicated catalog overview.
+    - One editorial overview section per visible marketplace category.
+  existing_page_modification: prohibited
+
+Required category route:
+  path: /products/[categorySlug]
+  requirements:
+    - Stable locally controlled slug.
+    - 404 for unknown or hidden category.
+    - Canonical metadata.
+    - Shows products from one marketplace category.
+
+Page sections:
+  1. Catalog title and short Traditional Chinese brand statement with small English accent.
+  2. Last successful synchronization timestamp.
+  3. Category-only navigation.
+  4. Category overview sections on /products or selected category result.
+  5. Four-column desktop / two-column mobile product grids.
+  6. Empty, stale, or error-safe status.
+
+Product card required fields:
+  - Primary image or local placeholder.
+  - Product title visually shortened to two lines.
+  - Full product title available to assistive technology.
+
+Product card prohibited visible fields:
+  - Current price.
+  - Original price.
+  - Availability label.
+  - SKU/style code.
+  - Category label.
+  - Badge.
+  - Separate visible CTA text.
+
+Outbound link:
+  interactive_target: entire product card
+  target: _blank
+  rel: noreferrer noopener
+  accessible_label:
+    - Include full product title.
+    - Announce that the product opens on Shopee in a new tab.
+  analytics_event: shopee_product_click
+
+Public visibility default:
+  include:
+    - is_dzrzvd=true
+    - inactive_at is null
+    - status exactly NORMAL
+    - available_stock is known and greater than zero
+  exclude:
+    - title contains neither DZRZVD nor 杜戛地 unless an audited title-classification
+      include override exists
+    - inactive, unlisted, reviewing, banned, seller-deleted, or Shopee-deleted
+    - available_stock is zero, negative, or unknown
+    - manual force-exclude
+
+Category sort:
+  1. category_presentation.sort_order
+  2. Shopee display name
+
+Product sort within category:
+  1. curated product order if later added
+  2. source update time descending
+  3. normalized product title as stable tie-breaker
+
+Caching:
+  tag: shopee-catalog
+  invalidation: after successful sync commit
+  stale_source_behavior:
+    - Keep catalog visible.
+    - Display last-updated timestamp.
+    - Do not expose internal error details publicly.
+
+Responsive behavior:
+  mobile: 2 compact cards per row
+  small_tablet: 2 or 3 cards per row
+  desktop: exactly 4 cards per row at the primary desktop breakpoint
+  category_controls:
+    - Categories only.
+    - Accessible links or horizontally scrolling category chips on mobile.
+    - Keyboard operable.
+  visual_direction:
+    - Balanced editorial and e-commerce.
+    - Shopee listing images shown as-is.
+    - Traditional Chinese with small English brand accents.
+
+Accessibility:
+  - One h1 per page.
+  - Category headings use h2.
+  - Product names use semantically appropriate headings.
+  - Meaningful image alt text.
+  - Visible focus states.
+  - Sufficient contrast.
+  - Reduced-motion preference honored.
+  - Full title remains available despite visual line clamping.
+  - External-link accessible name announces Shopee and new-tab behavior.
+
+SEO:
+  - Server-render product names and category headings.
+  - Add page title and description.
+  - Required category metadata for separate category pages.
+  - Do not create a local product detail URL unless there is meaningful unique
+    content and correct canonical behavior.
+  - Make it clear that checkout takes place on Shopee.
+  - Do not modify metadata or content of existing pages.
+
+======================================================================
+16.1 SIMPLE_PROTECTED_ADMIN_PAGE
+======================================================================
+
+Route:
+  path: /admin/shopee-catalog
+  public: false
+  existing_page_modification: prohibited
+
+Authentication:
+  model: single_operator
+  public_signup: false
+  recommended_implementation:
+    - Supabase Auth with one operator invited or created through the Supabase
+      Dashboard.
+    - @supabase/ssr clients with cookie-based sessions.
+    - A server-side route guard that calls supabase.auth.getUser().
+    - An active app_private.app_admin row matching the verified Auth user UUID.
+    - SameSite=Lax or stricter, Secure=true in production, and bounded sessions.
+  requirements:
+    - Disable and do not expose public sign-up.
+    - Reject authenticated users who are absent or inactive in app_admin.
+    - Never authorize from unverified cookie payloads or client state alone.
+    - Rate-limit login attempts.
+    - Protect mutating actions against CSRF.
+    - Record the verified Supabase Auth user UUID and action time.
+    - Keep SUPABASE_SECRET_KEY server-only and out of ordinary page requests.
+
+Admin page panels:
+  connection:
+    - Shopee authorization status.
+    - Expected shop_id.
+    - Token expiry time without showing token.
+    - Reauthorization action.
+  latest_sync:
+    - Run ID.
+    - Trigger and mode.
+    - Start and finish times.
+    - Success/failure/skipped status.
+    - Discovered, matched, excluded, active-in-stock, inserted, updated, and
+      hidden-out-of-stock counts.
+    - Safe warnings and safe error summary.
+  actions:
+    - Dry-run sync with confirmation.
+    - Full sync with stronger confirmation.
+    - Refresh current status.
+  product_overrides:
+    - Search by item_id or title.
+    - Show current title-match result.
+    - Force include.
+    - Force exclude.
+    - Require reason.
+    - Show existing override and audit timestamps.
+
+Admin page prohibited content:
+  - Access token.
+  - Refresh token.
+  - Partner key.
+  - Signature.
+  - Authorization code.
+  - Database URL.
+  - Complete unredacted upstream payload.
+
+======================================================================
+17. IMAGE_POLICY
+======================================================================
+
+Default:
+  - Store ordered Shopee image URL strings.
+  - Render through next/image only for allowlisted remote hosts.
+  - Use the original Shopee listing image as-is.
+  - Do not crop, recolor, overlay, or replace a valid Shopee image.
+  - Use object-fit contain inside a stable card frame.
+  - Use explicit responsive sizes.
+  - Lazy-load below-fold images.
+  - Display a local DZRZVD placeholder on failure.
+
+Security:
+  - Only accept HTTPS image URLs.
+  - Reject non-Shopee/unapproved hosts from upstream data.
+  - Never pass arbitrary user-controlled hosts into an image proxy.
+
+Rights:
+  - Confirm Shopee API and seller rights permit public display.
+  - Do not bulk-copy to Vercel Blob without approval.
+
+Monitoring:
+  - Count products with zero valid images.
+  - Record image host changes.
+  - Alert if a significant percentage loses images.
+
+======================================================================
+18. SECURITY_AND_PRIVACY
+======================================================================
+
+Secret classification:
+  POSTGRES_URL: secret
+  POSTGRES_URL_NON_POOLING: secret
+  SUPABASE_URL: server_configuration
+  SUPABASE_PUBLISHABLE_KEY: publishable_server_configuration
+  SUPABASE_SECRET_KEY: highly_privileged_server_secret
+  NEXT_PUBLIC_SUPABASE_URL: publishable_client_configuration
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishable_client_configuration
+  SHOPEE_PARTNER_ID: sensitive_server_configuration
+  SHOPEE_PARTNER_KEY: secret
+  SHOPEE_API_BASE_URL: server_configuration
+  SHOPEE_REDIRECT_URL: server_configuration
+  SHOPEE_TOKEN_ENCRYPTION_KEY: secret
+  CRON_SECRET: secret
+  access_token: secret
+  refresh_token: secret
+  authorization_code: transient_secret
+  sign: sensitive
+
+Environment rules:
+  - Only the Supabase URL and publishable key may begin with NEXT_PUBLIC_.
+  - The Supabase secret key, database URLs, Shopee secrets, and CRON_SECRET must
+    never enter a client bundle.
+  - Configure separate local, preview, and production Supabase projects/values.
+  - Preview and development deployments must not connect to production Supabase.
+  - Do not put credentials in source control or documentation examples.
+  - .env.example contains names and descriptions only.
+
+Supabase authorization and database exposure:
+  - Use Supabase Auth only for the protected operator interface.
+  - Browser code does not read or mutate catalog data through the Supabase Data
+    API; public catalog reads run in trusted Next.js server code.
+  - Keep catalog and app_private outside exposed Data API schemas.
+  - Revoke schema/table privileges from anon and authenticated roles.
+  - If the application uses only direct SQL for application data, disable the
+    Data API or expose a separate intentionally empty/minimal schema.
+  - SUPABASE_SECRET_KEY bypasses Row Level Security and is permitted only in
+    explicitly audited server-side Auth administration flows.
+  - Prefer the publishable/secret key model; do not start new work on legacy
+    anon/service_role keys.
+
+Database connection policy:
+  - Vercel runtime queries use POSTGRES_URL through Supavisor transaction pooling.
+  - Disable prepared statements and keep transactions short.
+  - Migrations, pg_dump, and maintenance use POSTGRES_URL_NON_POOLING.
+  - Never hold a transaction open while calling Shopee.
+
+Token encryption:
+  recommendation:
+    - Authenticated encryption such as AES-256-GCM.
+    - Random nonce per encryption.
+    - Store ciphertext, nonce, and authentication tag in a versioned envelope.
+  key:
+    - Stored only in Vercel environment.
+    - Separate from database credentials.
+  rotation:
+    - Version envelope.
+    - Support decrypt with old key and re-encrypt with current key.
+
+Authorization state:
+  - Cryptographically random.
+  - Expiring.
+  - Single-use.
+  - Bound to intended redirect and operation.
+  - Checked before exchanging the authorization code.
+
+Input and response validation:
+  - Use runtime schemas at every external boundary.
+  - Treat Shopee strings as untrusted content.
+  - Render as text, never HTML.
+  - Constrain outbound API hosts.
+  - Use parameterized queries via ORM.
+
+Data minimization:
+  requested_data:
+    - Products.
+    - Categories.
+    - Shop identifier and minimal shop metadata.
+  prohibited_data:
+    - Buyers.
+    - Orders.
+    - Addresses.
+    - Payments.
+    - Messages.
+    - Logistics.
+
+Logging:
+  allowed:
+    - run_id
+    - endpoint path
+    - shop_id where operationally needed
+    - Shopee request_id
+    - normalized error code
+    - counts
+    - duration
+  prohibited:
+    - access token
+    - refresh token
+    - partner key
+    - authorization code
+    - signature
+    - database connection URL
+
+======================================================================
+19. OBSERVABILITY
+======================================================================
+
+Structured log schema:
+  event: string
+  run_id: UUID
+  trigger: string
+  mode: string
+  shop_id: string
+  endpoint: string_or_null
+  shopee_request_id: string_or_null
+  duration_ms: integer
+  attempt: integer_or_null
+  status: string
+  error_code: string_or_null
+  item_count: integer_or_null
+  deployment_id: string_or_null
+
+Metrics:
+  sync:
+    - last_success_age_hours
+    - duration_ms
+    - endpoint_request_count
+    - retry_count
+    - consecutive_failure_count
+    - token_refresh_failure_count
+  catalog:
+    - dzrzvd_active_count
+    - dzrzvd_out_of_stock_count
+    - new_count
+    - updated_count
+    - inactivated_count
+    - unknown_category_count
+    - missing_image_count
+    - missing_price_count
+    - ambiguous_match_count
+
+Alert thresholds:
+  - No successful sync for more than 30 hours.
+  - Three consecutive sync failures.
+  - Token refresh failure.
+  - Authorization revoked.
+  - DZRZVD active count equals zero.
+  - DZRZVD count changes by more than 30% from previous successful run.
+  - Unknown category count greater than zero for two consecutive runs.
+  - Missing image percentage increases materially.
+
+Runbooks:
+  RUNBOOK-001 manual_sync:
+    1. Authenticate as administrator.
+    2. Trigger dry run.
+    3. Inspect run ID, counts, and safe errors.
+    4. Trigger full run if dry run is sound.
+    5. Confirm last_sync_at and public catalog.
+
+  RUNBOOK-002 reauthorization:
+    1. Confirm failure is authorization-related.
+    2. Pause repeated manual retries.
+    3. Start official seller authorization.
+    4. Confirm returned shop_id matches expected kuSport shop.
+    5. Run dry run.
+    6. Run full sync.
+    7. Confirm schedule remains registered.
+
+  RUNBOOK-003 false_positive:
+    1. Record item_id.
+    2. Add force-exclude override and reason.
+    3. Run incremental or full sync.
+    4. Confirm public removal.
+    5. Evaluate classifier improvement separately.
+
+  RUNBOOK-004 bad_sync:
+    1. Do not hard-delete database rows.
+    2. Disable publishing/navigation if needed.
+    3. Inspect run and upstream request IDs.
+    4. Restore prior visibility snapshot or correct records transactionally.
+    5. Validate with dry run before re-enabling.
+
+======================================================================
+20. TEST_STRATEGY
+======================================================================
+
+UNIT_TESTS:
+  signing:
+    - Shop API base string order.
+    - HMAC-SHA256 output against official/test vector.
+    - Timestamp handling.
+  identifier:
+    - 64-bit item and category IDs preserved.
+  normalization:
+    - Unicode and width normalization.
+    - Empty optional field behavior.
+    - Decimal price conversion.
+    - Image host validation.
+  classifier:
+    - Manual include wins.
+    - Manual exclude wins.
+    - Title containing DZRZVD includes, with case-insensitive Latin comparison.
+    - Title containing 杜戛地 includes.
+    - Title containing neither token excludes.
+    - Shopee brand, description, category, and SKU do not alter the default result.
+  taxonomy:
+    - Correct root-to-leaf breadcrumb.
+    - Missing parent.
+    - Cycle detection.
+    - Maximum depth.
+  display:
+    - Four cards at the desktop breakpoint.
+    - Two compact cards at the mobile breakpoint.
+    - Two-line visual title clamp with full accessible title.
+    - Image and title are the only visible product-card content.
+    - Out-of-stock products do not render.
+
+CONTRACT_TESTS:
+  fixtures:
+    - get_item_list success.
+    - get_item_list pagination.
+    - get_item_base_info representative TW products.
+    - missing brand.
+    - missing image.
+    - stock summary.
+    - get_category hierarchy.
+    - error and warning envelopes.
+  behavior:
+    - Ignore harmless unknown fields.
+    - Reject missing required IDs.
+    - Preserve request_id.
+
+INTEGRATION_TESTS:
+  - Full initial synchronization.
+  - Pagination across more than one page.
+  - Batch item detail retrieval.
+  - Token refresh before expiry.
+  - Token expiry response followed by one refresh and replay.
+  - Retryable upstream 5xx.
+  - Non-retryable invalid signature.
+  - Partial batch failure leaves current catalog unchanged.
+  - Repeated full sync is idempotent.
+  - Missing item becomes inactive only after complete scan.
+  - Rediscovered item clears inactive_at.
+  - Expiring sync_lock row lease prevents overlap and recovers after worker loss.
+  - A stale lease owner cannot heartbeat, release, or overwrite refreshed tokens.
+  - Cache invalidation follows commit.
+
+ROUTE_TESTS:
+  - Cron route rejects missing Authorization header.
+  - Cron route rejects wrong secret.
+  - Cron route accepts correct secret.
+  - Manual route rejects anonymous user.
+  - Manual route rejects an authenticated user absent from active app_admin.
+  - Supabase SSR session expiry redirects to /admin/login.
+  - Auth callback rejects invalid state.
+  - Auth callback rejects expired state.
+  - Auth callback rejects replayed state.
+  - Safe route responses contain no secrets.
+
+UI_TESTS:
+  - Product grid with multiple categories.
+  - Empty catalog.
+  - Stale catalog.
+  - Missing image.
+  - Long Traditional Chinese product title.
+  - Four-card desktop grid.
+  - Two-card mobile grid.
+  - Out-of-stock product absent.
+  - Price, stock, SKU, badge, and visible CTA absent from cards.
+  - Category control keyboard use.
+  - Responsive layout.
+  - Whole-card outbound link and new-tab attributes.
+  - Existing pages and components remain unchanged.
+  - Protected admin page states and actions.
+
+END_TO_END_TESTS:
+  flow:
+    1. Seed test catalog.
+    2. Load /products.
+    3. Confirm category headings.
+    4. Select a category.
+    5. Confirm only matching products.
+    6. Confirm the whole product card points to a valid Shopee HTTPS URL and opens a new tab.
+  environments:
+    - local
+    - preview
+    - production smoke read-only
+
+SECURITY_TESTS:
+  - No secret value appears in client bundle.
+  - No secret value appears in route response.
+  - Product title with markup renders as text.
+  - Arbitrary remote image host is rejected.
+  - Invalid redirect/state fails closed.
+  - Database query is parameterized.
+  - Browser roles cannot query catalog or app_private through the Supabase Data API.
+  - SUPABASE_SECRET_KEY is absent from the client bundle and normal responses.
+
+PERFORMANCE_TESTS:
+  - Catalog query for expected product volume.
+  - Product page server render.
+  - Image loading and layout shift.
+  - Sync function duration below Vercel limit with realistic item count.
+
+======================================================================
+21. PROPOSED_FILE_MAP
+======================================================================
+
+app/api/cron/shopee-sync/route.ts
+  purpose: Protected scheduled GET handler.
+
+app/api/shopee/auth/start/route.ts
+  purpose: Protected seller authorization start.
+
+app/api/shopee/auth/callback/route.ts
+  purpose: Validate callback and store encrypted tokens.
+
+app/api/admin/shopee/status/route.ts
+  purpose: Protected authorization, shop, token-expiry, and latest-sync health.
+
+app/api/admin/shopee/sync/route.ts
+  purpose: Protected dry-run/manual synchronization.
+
+app/api/admin/products/[itemId]/override/route.ts
+  purpose: Protected audited title-classification override mutation.
+
+app/auth/callback/route.ts
+  purpose: Exchange the Supabase Auth code for a cookie-backed SSR session.
+
+app/admin/login/page.tsx
+  purpose: Operator-only Supabase Auth login; provides no public sign-up.
+
+app/api/catalog/categories/route.ts
+  optional: true
+  purpose: Public cached category JSON; never calls Shopee.
+
+app/api/catalog/products/route.ts
+  optional: true
+  purpose: Public cached visible-product JSON with category and pagination query.
+
+app/admin/shopee-catalog/page.tsx
+  purpose: Simple protected operator dashboard.
+
+app/admin/shopee-catalog/actions.ts
+  purpose: Server actions for dry run, full sync, reauthorization, and audited overrides.
+
+app/products/page.tsx
+  purpose: Dedicated server-rendered marketplace-category overview.
+
+app/products/loading.tsx
+  purpose: Route loading state.
+
+app/products/error.tsx
+  purpose: Friendly page error boundary without internal details.
+
+app/products/[categorySlug]/page.tsx
+  required: true
+  purpose: Shareable separate marketplace category page.
+
+app/products/catalog.module.css
+  purpose: Scoped balanced editorial/e-commerce styles with four-column desktop
+    and two-column mobile grids; prevents changes to existing pages.
+
+app/components/catalog/CatalogHeader.tsx
+app/components/catalog/CategoryNavigation.tsx
+app/components/catalog/CategorySection.tsx
+app/components/catalog/ProductCard.tsx
+app/components/catalog/CatalogStatus.tsx
+
+Existing files that must not be edited for this feature:
+  - app/page.tsx
+  - app/about/page.tsx
+  - app/location/page.tsx
+  - app/components/Header.tsx
+  - app/components/Footer.tsx
+
+db/index.ts
+  purpose: Server-only postgres-js client using POSTGRES_URL with prepare=false,
+    wrapped by drizzle-orm/postgres-js.
+
+db/schema.ts
+  purpose: Drizzle schema.
+
+db/repositories/catalog.ts
+db/repositories/shops.ts
+db/repositories/sync-runs.ts
+db/repositories/sync-locks.ts
+
+supabase/config.toml
+  purpose: Local Supabase project configuration.
+
+supabase/migrations/*.sql
+  purpose: Single authoritative migration chain for catalog and app_private
+    schemas, grants, constraints, functions, and indexes.
+
+supabase/seed.sql
+  purpose: Non-production fixtures only; never contains production credentials.
+
+lib/config.ts
+  purpose: Validated server environment.
+
+lib/supabase/browser.ts
+  purpose: Browser Auth client using only NEXT_PUBLIC Supabase values.
+
+lib/supabase/server.ts
+  purpose: Cookie-aware @supabase/ssr server Auth client.
+
+lib/supabase/require-admin.ts
+  purpose: Verify auth.getUser() and require an active app_private.app_admin row.
+
+lib/crypto/token-encryption.ts
+  purpose: Versioned authenticated token encryption.
+
+lib/shopee/client.ts
+lib/shopee/signing.ts
+lib/shopee/auth.ts
+lib/shopee/schemas.ts
+lib/shopee/endpoints.ts
+lib/shopee/retry.ts
+lib/shopee/sync.ts
+
+lib/catalog/classifier.ts
+lib/catalog/normalize.ts
+lib/catalog/taxonomy.ts
+lib/catalog/queries.ts
+
+proxy.ts
+  purpose: Refresh Supabase Auth cookies and redirect unauthenticated admin
+    requests without treating proxy state as final authorization.
+
+tests/fixtures/shopee/*
+tests/unit/*
+tests/integration/*
+tests/routes/*
+tests/e2e/*
+
+vercel.json
+.env.example
+docs/shopee-authorization-runbook.md
+docs/shopee-sync-runbook.md
+docs/shopee-data-inventory.md
+docs/supabase-environment-runbook.md
+docs/supabase-auth-runbook.md
+docs/supabase-backup-restore-runbook.md
+
+package.json
+  purpose: Add pinned postgres, @supabase/supabase-js, and @supabase/ssr dependencies.
+
+Implementation conventions:
+  - Separate transport, domain, and persistence types.
+  - Validate environment variables at startup/server entry.
+  - Mark sensitive modules server-only.
+  - React components never import Shopee client.
+  - React components query through catalog repository/service.
+  - No raw source payload is used as dangerouslySetInnerHTML.
+
+======================================================================
+22. ENVIRONMENT_VARIABLES
+======================================================================
+
+POSTGRES_URL:
+  required: true
+  secret: true
+  scope: server
+  description: Supavisor transaction-pooled Supabase Postgres URL for Vercel runtime.
+  runtime_rules:
+    - Disable prepared statements.
+    - Use short transactions.
+    - Do not depend on database session affinity.
+
+POSTGRES_URL_NON_POOLING:
+  required: true
+  secret: true
+  scope: migration_and_maintenance_only
+  description: Direct/non-pooled Supabase Postgres URL for migrations, pg_dump,
+    and maintenance; never exposed to the browser.
+
+SUPABASE_URL:
+  required: true
+  secret: false
+  scope: server
+  description: Supabase project API URL for server-side Auth.
+
+SUPABASE_PUBLISHABLE_KEY:
+  required: true
+  secret: false
+  scope: server
+  description: Publishable Supabase key for server-side SSR Auth client setup.
+
+SUPABASE_SECRET_KEY:
+  required: conditional
+  secret: true
+  scope: trusted_server_auth_administration_only
+  description: Highly privileged key used only when a server-side invite or Auth
+    administration flow is implemented; avoid in ordinary requests.
+  prohibited:
+    - Client bundle.
+    - Catalog queries.
+    - Logging.
+
+NEXT_PUBLIC_SUPABASE_URL:
+  required: true
+  secret: false
+  scope: browser
+  description: Supabase project URL for the browser Auth client.
+
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+  required: true
+  secret: false
+  scope: browser
+  description: Publishable key for the browser Auth client.
+
+MARKETPLACE_INJECTED_BUT_NOT_APPLICATION_CONTRACT:
+  - POSTGRES_PRISMA_URL
+  - POSTGRES_HOST
+  - POSTGRES_USER
+  - POSTGRES_PASSWORD
+  - POSTGRES_DATABASE
+  note: The Vercel Marketplace integration may add these values, but application
+    code uses the explicit variables above.
+
+SHOPEE_PARTNER_ID:
+  required: true
+  secret: false_but_sensitive
+  scope: server
+  description: Shopee application partner ID.
+
+SHOPEE_PARTNER_KEY:
+  required: true
+  secret: true
+  scope: server
+  description: HMAC signing key.
+
+SHOPEE_API_BASE_URL:
+  required: true
+  secret: false
+  scope: server
+  values:
+    local_or_test: exact approved sandbox host
+    production: https://partner.shopeemobile.com unless assigned otherwise
+
+SHOPEE_AUTH_BASE_URL:
+  required: true
+  secret: false
+  scope: server
+  values:
+    sandbox: confirm current fixed URL in Shopee Console during proof
+    production: https://open.shopee.com/auth
+
+SHOPEE_REDIRECT_URL:
+  required: true
+  secret: false
+  scope: server
+  production: https://www.dzrzvd.com.tw/api/shopee/auth/callback
+
+SHOPEE_TOKEN_ENCRYPTION_KEY:
+  required: true
+  secret: true
+  scope: server
+  description: Application-layer token encryption key.
+
+CRON_SECRET:
+  required: true
+  secret: true
+  scope: server
+  entropy_recommendation: at least 32 random bytes
+
+DZRZVD_TITLE_TOKENS:
+  required: true
+  secret: false
+  scope: server
+  fixed_initial_value:
+    - DZRZVD
+    - 杜戛地
+
+SHOPEE_SYNC_MODE:
+  required: false
+  default: full
+  allowed:
+    - full
+    - hybrid
+
+ENVIRONMENT_SCOPING:
+  production:
+    - Production Vercel deployment connects only to production Supabase.
+  preview:
+    - Connect to a separate non-production Supabase project by default.
+    - Supabase Branching may be used only if the selected plan supports it and
+      branch lifecycle is integrated with preview deployment lifecycle.
+  development:
+    - Prefer local Supabase CLI or a dedicated development project.
+  prohibited:
+    - Preview or local credentials pointing at production Supabase.
+
+======================================================================
+23. DELIVERY_PHASES
+======================================================================
+
+PHASE_0:
+  name: API approval and proof
+  engineering_estimate_days: 1_to_3
+  external_lead_time_excluded: true
+  tasks:
+    - Register app.
+    - Complete Taiwan developer screening.
+    - Request minimal permissions.
+    - Configure callback URLs.
+    - Authorize kuSport shop.
+    - Prove item list, base info, category, and token refresh.
+    - Save sanitized representative fixtures.
+  exit_criteria:
+    - Authorized shop_id confirmed.
+    - Representative products and category fields returned.
+    - Token refresh proven.
+
+PHASE_1:
+  name: Vercel and Supabase foundation
+  engineering_estimate_days: 2_to_3
+  tasks:
+    - Install the Supabase integration from Vercel Marketplace and provision or
+      connect the production Supabase project.
+    - If Marketplace Public Alpha behavior is unsuitable, connect the same
+      Supabase project manually and configure equivalent environment values.
+    - Select the closest available Supabase region to Vercel sin1.
+    - Provision separate non-production Supabase.
+    - Add validated environment configuration.
+    - Implement Drizzle query schema and Supabase SQL migrations.
+    - Create catalog and app_private schemas and revoke browser-role access.
+    - Configure invite-only Supabase Auth and seed the operator app_admin row.
+    - Implement repository layer.
+    - Implement versioned token encryption.
+    - Add indexes and constraints.
+  exit_criteria:
+    - supabase/migrations is the single schema migration history.
+    - Migration works against non-production and production using the non-pooled
+      maintenance connection.
+    - Vercel runtime uses the transaction-pooled URL with prepared statements off.
+    - Preview cannot connect to production Supabase.
+    - Authenticated non-admins and browser Data API roles cannot access app data.
+    - No secrets enter client bundle.
+
+PHASE_2:
+  name: Shopee client and synchronization
+  engineering_estimate_days: 3_to_5
+  tasks:
+    - Signing.
+    - HTTP client and retry policy.
+    - Authorization and refresh.
+    - Item pagination.
+    - Detail batching.
+    - Category tree.
+    - Normalization.
+    - Classification and overrides.
+    - Full reconciliation.
+    - Expiring sync_lock row lease and heartbeat.
+    - Run audit.
+  exit_criteria:
+    - Unit, contract, and integration tests pass.
+    - Repeated sync is idempotent.
+    - Partial failure preserves catalog.
+
+PHASE_3:
+  name: Catalog experience
+  engineering_estimate_days: 2_to_4
+  tasks:
+    - /products route.
+    - Required /products/[categorySlug] routes.
+    - Marketplace category-only navigation.
+    - Image-and-shortened-title whole-card links.
+    - Four-card desktop and two-card mobile layouts.
+    - Empty, stale, and missing-image states.
+    - Public exclusion of inactive and out-of-stock products.
+    - Balanced editorial/e-commerce design.
+    - Traditional Chinese with small English accents.
+    - SEO metadata.
+    - Accessibility review.
+    - Scoped styling with no existing-page or existing-component modifications.
+  exit_criteria:
+    - Desktop and mobile review passes.
+    - Accessibility basics pass.
+    - Public requests make no Shopee call.
+
+PHASE_4:
+  name: Automation and operations
+  engineering_estimate_days: 1_to_2
+  tasks:
+    - vercel.json cron.
+    - CRON_SECRET validation.
+    - Manual sync route.
+    - Simple protected single-operator admin page.
+    - Supabase Auth SSR login, server verification, and app_admin authorization.
+    - Audited title-classification include and exclude controls with non-overridable
+      active-status and stock gates.
+    - Logs and metrics.
+    - Alerts.
+    - Runbooks.
+    - Supabase migration, environment, backup, and restore procedures.
+    - Failure drills.
+  exit_criteria:
+    - Scheduled production run succeeds.
+    - Manual recovery is tested.
+    - Backup/restore procedure is exercised against non-production.
+
+PHASE_5:
+  name: Production rollout
+  engineering_estimate_days: 1_plus_monitoring
+  tasks:
+    - Dry-run comparison with Shopee storefront.
+    - Product-owner approval of included and excluded items.
+    - Enable navigation.
+    - Monitor 72 hours.
+    - Record launch baseline.
+  exit_criteria:
+    - Product owner signs off.
+    - At least one scheduled run succeeds after launch.
+
+TOTAL_ENGINEERING_ESTIMATE:
+  minimum_days: 10
+  maximum_days: 18
+  excludes:
+    - Shopee approval wait.
+    - Legal/terms review.
+    - Major visual redesign.
+    - Advanced admin UI.
+
+======================================================================
+24. RISK_REGISTER
+======================================================================
+
+RISK-001:
+  priority: P0
+  description: Shopee app is not approved or does not receive Product API permission.
+  probability: medium
+  impact: blocks production API sync
+  mitigation:
+    - Start approval first.
+    - Develop against sanitized fixtures.
+    - Use seller CSV as interim source.
+
+RISK-002:
+  priority: P0
+  description: Title-token classifier imports an unrelated title or misses a DZRZVD title after naming changes.
+  probability: medium
+  impact: brand and catalog integrity failure
+  mitigation:
+    - Match only normalized title tokens DZRZVD and 杜戛地.
+    - Do not infer from brand, description, SKU, or category.
+    - Audited manual include/exclude overrides.
+    - Dry-run review.
+    - Product count anomaly alerts.
+
+RISK-003:
+  priority: P1
+  description: Seller authorization expires or is revoked.
+  probability: medium
+  impact: catalog becomes stale
+  mitigation:
+    - Refresh early.
+    - Alert.
+    - Reauthorization runbook.
+    - Preserve cached data.
+
+RISK-004:
+  priority: P1
+  description: Partial sync marks valid products inactive.
+  probability: low
+  impact: visible product loss
+  mitigation:
+    - Inactivate unseen products only after complete successful scan.
+    - Transactional writes.
+
+RISK-005:
+  priority: P1
+  description: Shopee response schema changes.
+  probability: medium
+  impact: validation or normalization failure
+  mitigation:
+    - Runtime schemas.
+    - Tolerate unknown fields.
+    - Preserve request IDs.
+    - Fixture updates.
+    - Fail without corrupting catalog.
+
+RISK-006:
+  priority: P1
+  description: Secret leakage through logs, response, or client bundle.
+  probability: low
+  impact: severe
+  mitigation:
+    - Server-only modules.
+    - Redaction.
+    - Security tests.
+    - Only Supabase URL and publishable key are NEXT_PUBLIC.
+    - SUPABASE_SECRET_KEY and database URLs are server-only.
+    - Encrypted token storage.
+
+RISK-007:
+  priority: P2
+  description: Vercel Hobby cron timing is imprecise.
+  probability: high
+  impact: minor freshness variance
+  mitigation:
+    - Set freshness expectation to daily.
+    - Upgrade only if sub-daily requirement is real.
+
+RISK-008:
+  priority: P2
+  description: Shopee images fail or host pattern changes.
+  probability: medium
+  impact: broken product cards
+  mitigation:
+    - Placeholder.
+    - Host monitoring.
+    - Exact allowlist.
+    - Rights-reviewed copy alternative.
+
+RISK-009:
+  priority: P2
+  description: Existing encoding or stale tests block clean delivery.
+  probability: medium
+  impact: build and content quality
+  mitigation:
+    - Repair baseline first.
+    - Establish clean build and tests before feature acceptance.
+
+RISK-010:
+  priority: P3
+  description: Shopee category labels are poor merchandising labels.
+  probability: medium
+  impact: user discoverability
+  mitigation:
+    - Keep source taxonomy.
+    - Add local category_presentation overrides.
+
+RISK-011:
+  priority: P1
+  description: Vercel preview or local deployment is accidentally wired to
+    production Supabase.
+  probability: medium
+  impact: production data mutation or operator-account exposure
+  mitigation:
+    - Separate Supabase projects and Vercel environment scopes.
+    - Startup guard that rejects known production project ref outside production.
+    - Destructive integration tests run only on non-production.
+
+RISK-012:
+  priority: P1
+  description: Runtime code assumes session affinity or prepared statements while
+    using Supavisor transaction pooling.
+  probability: medium
+  impact: intermittent synchronization, locking, or query failure
+  mitigation:
+    - Prepared statements off.
+    - Expiring row lease instead of advisory locks.
+    - Short transactions with no external HTTP inside a transaction.
+    - Integration tests through POSTGRES_URL.
+
+RISK-013:
+  priority: P1
+  description: SUPABASE_SECRET_KEY leaks or an app schema is exposed through the
+    Supabase Data API.
+  probability: low
+  impact: authorization bypass and broad database access
+  mitigation:
+    - Browser uses publishable key only.
+    - Server secret key is optional and isolated to audited Auth administration.
+    - App schemas are not exposed; anon/authenticated grants are revoked.
+    - Bundle, route-response, and database-grant tests.
+
+RISK-014:
+  priority: P2
+  description: Vercel Marketplace Supabase integration changes during Public Alpha.
+  probability: medium
+  impact: provisioning or environment synchronization disruption
+  mitigation:
+    - Treat Marketplace as provisioning convenience, not a runtime dependency.
+    - Document manual connection using the same Supabase project and env contract.
+    - Pin application package versions and verify env values after integration changes.
+
+RISK-015:
+  priority: P1
+  description: Database loss cannot be restored within the required window.
+  probability: low
+  impact: catalog history, overrides, and encrypted Shopee authorization loss
+  mitigation:
+    - Use paid daily backups and PITR where the recovery objective requires it.
+    - On Free, schedule encrypted off-site logical dumps with supabase db dump.
+    - Test restore to non-production.
+    - Back up encryption-key recovery material separately from database backups.
+
+RISK-016:
+  priority: P2
+  description: The recommended @supabase/ssr package changes while it remains beta.
+  probability: medium
+  impact: operator login, callback, or session-refresh regression
+  mitigation:
+    - Pin the package version.
+    - Isolate Supabase client creation and authorization behind small adapters.
+    - Test login, callback, cookie refresh, expiry, and logout before upgrades.
+    - Review official release notes before changing versions.
+
+======================================================================
+25. ACCEPTANCE_CRITERIA
+======================================================================
+
+AC-FUNCTIONAL-001:
+  Given an authorized kuSport shop,
+  when a full sync runs,
+  then it completes and records a sync_run.
+
+AC-FUNCTIONAL-002:
+  All active products whose normalized titles contain DZRZVD or 杜戛地 are
+  persisted exactly once by item_id unless an audited override applies.
+
+AC-FUNCTIONAL-003:
+  Products whose normalized title contains neither DZRZVD nor 杜戛地 are excluded
+  from public results unless explicitly included by an audited title-classification
+  override; the active-status and stock gates still apply.
+
+AC-FUNCTIONAL-004:
+  Every visible product resolves to the selected category grouping or an explicit
+  Other fallback with an operational warning.
+
+AC-FUNCTIONAL-005:
+  A price, image, category, stock, status, or title change is reflected after a
+  successful synchronization.
+
+AC-FUNCTIONAL-006:
+  A product is public only when status is NORMAL, inactive_at is null, and
+  available_stock is known and greater than zero.
+
+AC-FUNCTIONAL-007:
+  Every visible image-and-shortened-title card is one valid HTTPS Shopee link
+  that opens in a new tab.
+
+AC-FUNCTIONAL-008:
+  /products renders marketplace category overview sections and each visible
+  category has a separate /products/[categorySlug] page.
+
+AC-FUNCTIONAL-009:
+  Category is the only visitor filter dimension.
+
+AC-FUNCTIONAL-010:
+  No existing page, Header component, or Footer component is modified.
+
+AC-RELIABILITY-001:
+  Replaying an identical full sync creates no duplicate rows.
+
+AC-RELIABILITY-002:
+  A partial detail-batch failure does not inactivate or delete existing products.
+
+AC-RELIABILITY-003:
+  Two overlapping synchronization attempts do not write concurrently.
+
+AC-RELIABILITY-004:
+  The public catalog renders from cached database data when Shopee is unavailable.
+
+AC-RELIABILITY-005:
+  Cache invalidation happens only after transaction commit.
+
+AC-RELIABILITY-006:
+  Runtime database traffic uses POSTGRES_URL through transaction pooling with
+  prepared statements disabled; migrations and dumps use POSTGRES_URL_NON_POOLING.
+
+AC-RELIABILITY-007:
+  A crashed synchronization worker's row lease expires and a later run can
+  recover without manual database-session cleanup.
+
+AC-SECURITY-001:
+  No partner key, token, code, database URL, or signature appears in browser
+  JavaScript, route responses, or normal logs.
+
+AC-SECURITY-002:
+  Cron route rejects an invalid secret before database or Shopee work.
+
+AC-SECURITY-003:
+  Authorization callback rejects invalid, expired, or replayed state.
+
+AC-SECURITY-004:
+  Persisted tokens are encrypted.
+
+AC-SECURITY-005:
+  The admin route requires a server-verified Supabase Auth user whose UUID has an
+  active app_private.app_admin row; public sign-up is unavailable.
+
+AC-SECURITY-006:
+  catalog and app_private cannot be queried by Supabase anon or authenticated
+  Data API roles, and SUPABASE_SECRET_KEY never reaches browser code.
+
+AC-UX-001:
+  /products uses four cards per row on desktop and two compact cards per row on
+  mobile, with an intentional intermediate-tablet layout.
+
+AC-UX-002:
+  Keyboard users can reach and operate category controls and product links.
+
+AC-UX-003:
+  Missing images, empty catalog, and stale catalog have intentional states;
+  inactive and out-of-stock products do not render.
+
+AC-UX-004:
+  Last successful update time is visible.
+
+AC-UX-005:
+  The full product card opens Shopee in a new tab and exposes this destination
+  and behavior in its accessible name.
+
+AC-UX-006:
+  Product cards visibly contain only the original Shopee listing image and a
+  shortened title.
+
+AC-UX-007:
+  Visual design balances editorial brand presentation and e-commerce density,
+  using Traditional Chinese with small English accents.
+
+AC-OPERATIONS-001:
+  Vercel lists the production cron.
+
+AC-OPERATIONS-002:
+  At least one production scheduled run succeeds.
+
+AC-OPERATIONS-003:
+  Manual synchronization and reauthorization runbooks are exercised.
+
+AC-OPERATIONS-004:
+  Operators can identify the latest run, result, counts, and safe error details.
+
+AC-OPERATIONS-005:
+  A protected simple admin page supports dry run, full sync, status review, and
+  audited title-classification include/exclude overrides that cannot bypass the
+  active-status or stock gates.
+
+AC-OPERATIONS-006:
+  Production and non-production Vercel environments connect to separate Supabase
+  projects, with an automated guard against production cross-wiring.
+
+AC-OPERATIONS-007:
+  The authoritative supabase/migrations chain applies cleanly and a documented
+  backup restore succeeds in non-production.
+
+AC-OWNER-001:
+  Product owner reviews and approves the imported DZRZVD set before launch.
+
+======================================================================
+26. DEFINITION_OF_DONE
+======================================================================
+
+The feature is done only when all of the following are true:
+  - Shopee application and seller authorization work in production.
+  - Vercel and production Supabase are connected with verified environment scope.
+  - Required supabase/migrations are applied from the non-pooled connection.
+  - Runtime SQL uses the Supavisor transaction pooler with prepared statements off.
+  - Production and non-production Supabase projects are isolated.
+  - Full sync is idempotent and failure-safe.
+  - Expiring sync row leases prevent overlap and recover after worker loss.
+  - DZRZVD classifier is approved against the real kuSport inventory.
+  - Marketplace category tree is stored and grouping is correct.
+  - /products overview and separate category pages are responsive and accessible.
+  - Desktop has four cards per row and mobile has two.
+  - Cards show only the original Shopee image and shortened title.
+  - Inactive and out-of-stock products do not render.
+  - Existing pages and shared components remain unchanged.
+  - Images and outbound links are valid.
+  - Public rendering does not call Shopee live.
+  - Cron and manual routes are protected.
+  - Invite-only Supabase Auth, app_admin authorization, the protected admin page,
+    and audited overrides work.
+  - App schemas are unavailable to browser Data API roles.
+  - Tokens are encrypted and redacted.
+  - Tests pass.
+  - Production build passes.
+  - Scheduled production sync succeeds.
+  - Environment, migration, sync, reauthorization, and backup/restore runbooks
+    exist and have been exercised.
+  - Product owner signs off on catalog accuracy.
+
+======================================================================
+27. OFFICIAL_REFERENCES
+======================================================================
+
+Shopee Open Platform Developer Guide:
+  https://open.shopee.com/developer-guide/16
+
+Shopee Authorization and Authentication Guide:
+  https://open.shopee.com/developer-guide/20
+
+Shopee Open Platform Console:
+  https://open.shopee.com/console
+
+Shopee Public - Get Access Token:
+  https://open.shopee.com/documents/v2/v2.public.get_access_token?type=1
+
+Shopee Public - Refresh Access Token:
+  https://open.shopee.com/documents/v2/v2.public.refresh_access_token?type=1
+
+Shopee Shop - Get Shop Information:
+  https://open.shopee.com/documents/v2/v2.shop.get_shop_info?type=1
+
+Shopee Product - Get Item List:
+  https://open.shopee.com/documents/v2/v2.product.get_item_list?module=89&type=1
+
+Shopee Product - Get Item Base Information:
+  https://open.shopee.com/documents/v2/v2.product.get_item_base_info?module=89&type=1
+
+Shopee Product - Get Category:
+  https://open.shopee.com/documents/v2/v2.product.get_category?module=89&type=1
+
+Shopee Category Tree Integration Guide:
+  https://open.shopee.com/developer-guide/209
+
+Shopee Product - Get Model List, conditional and not an MVP call:
+  https://open.shopee.com/documents/v2/v2.product.get_model_list?module=89&type=1
+
+Shopee Reserved Stock Change Push, future signal only:
+  https://open.shopee.com/push-mechanism/5
+
+Vercel Cron Jobs:
+  https://vercel.com/docs/cron-jobs
+
+Vercel Cron Usage and Pricing:
+  https://vercel.com/docs/cron-jobs/usage-and-pricing
+
+Managing Vercel Cron Jobs:
+  https://vercel.com/docs/cron-jobs/manage-cron-jobs
+
+Vercel Marketplace Storage:
+  https://vercel.com/docs/marketplace-storage
+
+Vercel Supabase Marketplace Integration:
+  https://vercel.com/marketplace/supabase/supabase
+
+Vercel Function Regions:
+  https://vercel.com/docs/functions/configuring-functions/region
+
+Vercel Regions:
+  https://vercel.com/docs/regions
+
+Supabase Vercel Marketplace Integration:
+  https://supabase.com/docs/guides/integrations/vercel-marketplace
+
+Supabase Database Connections and Supavisor:
+  https://supabase.com/docs/guides/database/connecting-to-postgres
+
+Supabase Server-Side Auth:
+  https://supabase.com/docs/guides/auth/server-side
+
+Supabase Next.js SSR Client:
+  https://supabase.com/docs/guides/auth/server-side/creating-a-client?framework=nextjs&queryGroups=framework
+
+Supabase API Keys:
+  https://supabase.com/docs/guides/getting-started/api-keys
+
+Supabase Data API Security:
+  https://supabase.com/docs/guides/api/securing-your-api
+
+Supabase Secure Data:
+  https://supabase.com/docs/guides/database/secure-data
+
+Supabase Auth Users and Invitations:
+  https://supabase.com/docs/guides/auth/users
+
+Supabase Database Migrations:
+  https://supabase.com/docs/guides/deployment/database-migrations
+
+Supabase Deployment and Branching:
+  https://supabase.com/docs/guides/deployment
+
+Supabase Database Backups and PITR:
+  https://supabase.com/docs/guides/platform/backups
+
+REFERENCE_VALIDATION_RULE:
+  Before implementation, verify current endpoint permissions, limits, field
+  availability, regional onboarding rules, token behavior, Vercel limits, and
+  Shopee data-use policies. The current /auth flow must be proven in Sandbox
+  because Shopee's 2026-07-24 authorization guide still contains legacy examples.
+  Platform behavior may change after 2026-07-30.
+
+END_OF_DOCUMENT

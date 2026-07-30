@@ -1,42 +1,124 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
+# Dependencies and package-manager state
+/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+!.yarn/patches/
+!.yarn/plugins/
+!.yarn/releases/
+!.yarn/versions/
 
-# testing
-/coverage
-
-# next.js
+# Build output and framework caches
 /.next/
 /.vinext/
 /out/
+/dist/
+/.turbo/
+/.cache/
+/.wrangler/
+/outputs/
+/work/
+next-env.d.ts
 
-# misc
-.DS_Store
+# Tests, coverage, and browser artifacts
+/coverage/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.auth/
+*.har
+*storage-state*.json
+*auth-state*.json
+
+# Environment variables and local runtime configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+.envrc
+/.direnv/
+.dev.vars
+.dev.vars.*
+*.local
+
+# Hosting and backend local state
+/.vercel/
+/.supabase/
+/supabase/.branches/
+/supabase/.temp/
+/supabase/.env
+/supabase/.env.*
+
+# Private keys, certificates containing private keys, and keystores
 *.pem
+*.key
+*.p12
+*.pfx
+*.pkcs12
+*.jks
+*.keystore
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+id_ecdsa
+id_ecdsa.*
 
-# debug
+# Credential and secret files
+/.secrets/
+/secrets/
+/credentials/
+.npmrc
+.yarnrc
+.pnpmrc
+.netrc
+credentials.json
+credentials.*.json
+*credentials*.yaml
+*credentials*.yml
+service-account*.json
+*service-account*.json
+secret.json
+secrets.json
+secrets.*.json
+*secrets*.yaml
+*secrets*.yml
+oauth-token*.json
+tokens.json
+
+# Local databases, exports, and backups
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.dump
+*.pgdump
+*.backup
+/backups/
+/dumps/
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+*.tfvars.json
+/.terraform/
+
+# Logs and diagnostic output can contain request headers or tokens
+*.log
+/logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-next-env.d.ts
-/dist/
-/.wrangler/
-/outputs/
-/work/
+# Editor, OS, and temporary files
+.DS_Store
+Thumbs.db
+Desktop.ini
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*.tmp
+*.temp
+*.bak
+*~

@@ -32,7 +32,7 @@ try {
     throw new Error(`Server did not become ready.\n${output}`);
   }
 
-  for (const route of ["/", "/about", "/location"]) {
+  for (const route of ["/", "/about", "/location", "/products"]) {
     const response = await fetch(`http://127.0.0.1:3100${route}`);
     const html = await response.text();
     if (!response.ok || !html.includes("DZRZVD")) {
@@ -40,6 +40,21 @@ try {
     }
     console.log(`${route} — HTTP ${response.status}, ${html.length} bytes`);
   }
+
+  const categoriesResponse = await fetch(
+    "http://127.0.0.1:3100/api/catalog/categories",
+  );
+  const categories = await categoriesResponse.json();
+
+  if (!categoriesResponse.ok || !Array.isArray(categories.categories)) {
+    throw new Error(
+      `/api/catalog/categories failed with HTTP ${categoriesResponse.status}`,
+    );
+  }
+
+  console.log(
+    `/api/catalog/categories — HTTP ${categoriesResponse.status}, ${categories.status}`,
+  );
 } finally {
   server.kill();
 }
