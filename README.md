@@ -51,8 +51,23 @@ Supabase has not been configured, so builds and existing public pages remain
 available before platform provisioning is complete.
 
 Vercel calls `/api/cron/supabase-health` daily at 06:17 UTC (14:17
-Asia/Taipei). It performs a minimal server-only Postgres query and requires the
-same `CRON_SECRET` Bearer authorization as the Shopee synchronization route.
+Asia/Taipei), and `/api/cron/shopee-sync` daily at 18:00 UTC (02:00
+Asia/Taipei). After Bearer authorization with `CRON_SECRET`, both routes write
+an atomic heartbeat to `app_private.keepalive_heartbeat`. The table is limited
+to one row per cron source and records the target Supabase project, last
+successful database write, and run count. The database and public Supabase URLs
+must resolve to the same project when both are configured.
+Set `SUPABASE_PROJECT_REF` to that project's ref so a consistently wrong set of
+URLs also fails before a heartbeat is written.
+
+Apply the keepalive migration before deploying the route changes. After each
+automatic window, verify both rows are advancing with:
+
+```sql
+select source, project_ref, last_succeeded_at, run_count
+from app_private.keepalive_heartbeat
+order by source;
+```
 
 Run the full verification suite with:
 

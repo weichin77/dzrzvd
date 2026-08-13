@@ -122,20 +122,57 @@ test("cron rejects unauthorized requests before synchronization", async () => {
   const authCheck = cron.indexOf(
     'request.headers.get("authorization") !== expectedAuthorization',
   );
+  const heartbeatCall = cron.indexOf(
+    'await recordKeepaliveHeartbeat("shopee-sync")',
+  );
   const syncCall = cron.indexOf("await runShopeeSync");
   assert.ok(authCheck >= 0);
-  assert.ok(syncCall > authCheck);
+  assert.ok(heartbeatCall > authCheck);
+  assert.ok(syncCall > heartbeatCall);
+  assert.match(cron, /Cache-Control.*no-store/s);
 });
 
-test("Supabase health cron authenticates before querying Postgres", async () => {
+test("Supabase health cron authenticates before recording its heartbeat", async () => {
   const cron = await source("app/api/cron/supabase-health/route.ts");
   const authCheck = cron.indexOf(
     'request.headers.get("authorization") !== expectedAuthorization',
   );
-  const healthQuery = cron.indexOf("select 1 as health_check");
+  const heartbeatCall = cron.indexOf(
+    'await recordKeepaliveHeartbeat("supabase-health")',
+  );
   assert.ok(authCheck >= 0);
-  assert.ok(healthQuery > authCheck);
+  assert.ok(heartbeatCall > authCheck);
+  assert.doesNotMatch(cron, /select 1 as health_check/i);
   assert.match(cron, /Cache-Control.*no-store/s);
+});
+
+test("persists bounded private keepalive heartbeats atomically", async () => {
+  const [migration, repository, config] = await Promise.all([
+    source("supabase/migrations/202608130001_keepalive_heartbeat.sql"),
+    source("db/repositories/keepalive.ts"),
+    source("lib/config.ts"),
+  ]);
+
+  assert.match(
+    migration,
+    /create table app_private\.keepalive_heartbeat/i,
+  );
+  assert.match(
+    migration,
+    /source in \('supabase-health', 'shopee-sync'\)/i,
+  );
+  assert.match(
+    migration,
+    /revoke all on table app_private\.keepalive_heartbeat\s+from public, anon, authenticated/i,
+  );
+  assert.match(repository, /insert into app_private\.keepalive_heartbeat/i);
+  assert.match(repository, /on conflict \(source\) do update/i);
+  assert.match(
+    repository,
+    /run_count = app_private\.keepalive_heartbeat\.run_count \+ 1/i,
+  );
+  assert.match(repository, /returning source, project_ref, last_succeeded_at, run_count/i);
+  assert.match(config, /resolveSupabaseProjectRef/);
 });
 
 test("environment template contains names and placeholders, not secret values", async () => {
@@ -143,6 +180,7 @@ test("environment template contains names and placeholders, not secret values", 
   for (const name of [
     "POSTGRES_URL",
     "POSTGRES_URL_NON_POOLING",
+    "SUPABASE_PROJECT_REF",
     "SUPABASE_SECRET_KEY",
     "SHOPEE_PARTNER_KEY",
     "SHOPEE_TOKEN_ENCRYPTION_KEY",

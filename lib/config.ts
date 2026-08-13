@@ -1,5 +1,7 @@
 import "server-only";
 
+import { resolveSupabaseProjectRef } from "@/lib/supabase/project-ref";
+
 type PublicSupabaseConfig = {
   url: string;
   publishableKey: string;
@@ -82,6 +84,19 @@ export function hasDatabaseConfig(): boolean {
 export function getDatabaseUrl(): string {
   assertSupabaseEnvironmentScope();
   return readRequired("POSTGRES_URL");
+}
+
+export function getDatabaseProjectRef(): string {
+  assertSupabaseEnvironmentScope();
+
+  return resolveSupabaseProjectRef({
+    databaseUrl: readRequired("POSTGRES_URL"),
+    expectedProjectRef: readRequired("SUPABASE_PROJECT_REF"),
+    publicUrls: [
+      process.env.SUPABASE_URL?.trim(),
+      process.env.NEXT_PUBLIC_SUPABASE_URL?.trim(),
+    ].filter((value): value is string => Boolean(value)),
+  });
 }
 
 export function hasSupabasePublicConfig(): boolean {

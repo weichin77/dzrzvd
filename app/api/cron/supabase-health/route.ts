@@ -1,8 +1,9 @@
-import { getSql } from "@/db";
+import { recordKeepaliveHeartbeat } from "@/db/repositories/keepalive";
 import {
   getCronSecret,
   hasDatabaseConfig,
 } from "@/lib/config";
+import { isSupabaseProjectConfigError } from "@/lib/supabase/project-ref";
 
 export const maxDuration = 30;
 
@@ -47,15 +48,26 @@ export async function GET(request: Request) {
   const startedAt = performance.now();
 
   try {
-    await getSql()`select 1 as health_check`;
+    const heartbeat = await recordKeepaliveHeartbeat("supabase-health");
 
     return json({
       ok: true,
-      checkedAt: new Date().toISOString(),
+      checkedAt: heartbeat.lastSucceededAt,
       latencyMs: Math.round(performance.now() - startedAt),
+      projectRef: heartbeat.projectRef,
+      runCount: heartbeat.runCount,
     });
-  } catch {
-    console.error("Supabase database health check failed.");
+  } catch (error) {
+    if (isSupabaseProjectConfigError(error)) {
+      console.error("Supabase project configuration validation failed.");
+
+      return json(
+        { ok: false, error: "project_mismatch" },
+        503,
+      );
+    }
+
+    console.error("Supabase keepalive heartbeat failed.");
 
     return json(
       { ok: false, error: "database_unavailable" },

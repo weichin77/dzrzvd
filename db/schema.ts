@@ -22,6 +22,18 @@ const auditColumns = {
 export const catalogSchema = pgSchema("catalog");
 export const privateSchema = pgSchema("app_private");
 
+export const keepaliveHeartbeat = privateSchema.table(
+  "keepalive_heartbeat",
+  {
+    source: text("source").primaryKey(),
+    projectRef: text("project_ref").notNull(),
+    lastSucceededAt: timestamp("last_succeeded_at", {
+      withTimezone: true,
+    }).defaultNow().notNull(),
+    runCount: integer("run_count").default(0).notNull(),
+  },
+);
+
 export const shopeeShop = privateSchema.table(
   "shopee_shop",
   {
