@@ -190,3 +190,44 @@ test("environment template contains names and placeholders, not secret values", 
   }
   assert.match(template, /^SUPABASE_PROJECT_ENV=nonproduction$/m);
 });
+
+test("Excel catalog imports are private, audited, and transactional", async () => {
+  const [migration, repository, action] = await Promise.all([
+    source("supabase/migrations/202608200001_admin_google_auth_and_excel_import.sql"),
+    source("db/repositories/excel-imports.ts"),
+    source("app/admin/catalog-upload/actions.ts"),
+  ]);
+
+  assert.match(migration, /create table app_private\.excel_import/i);
+  assert.match(migration, /values \(16630682, 'TW', 'kuSport', 'active'\)/i);
+  assert.match(migration, /insert into storage\.buckets/i);
+  assert.match(migration, /'catalog-uploads'[\s\S]*false/i);
+  assert.match(repository, /getDb\(\)\.transaction/);
+  assert.match(repository, /notInArray\(shopeeProduct\.itemId, itemIds\)/);
+  assert.match(repository, /matchMethod: "manual_excel_import"/);
+
+  const authCheck = action.indexOf("await requireAdmin()");
+  const parserCall = action.indexOf("parseShopeeExport(buffer)");
+  const importCall = action.indexOf("await importParsedShopeeCatalog");
+  assert.ok(authCheck >= 0);
+  assert.ok(parserCall > authCheck);
+  assert.ok(importCall > parserCall);
+  assert.match(action, /entry\.size > MAX_UPLOAD_BYTES/);
+  assert.match(action, /updateTag\("shopee-catalog"\)/);
+});
+
+test("Google callback provisions only verified Workspace identities", async () => {
+  const [callback, policy, admin] = await Promise.all([
+    source("app/auth/callback/route.ts"),
+    source("lib/supabase/google-admin-policy.ts"),
+    source("lib/supabase/require-admin.ts"),
+  ]);
+
+  assert.match(callback, /exchangeCodeForSession/);
+  assert.match(callback, /ensureDomainAdminProvisioned\(data\.user\)/);
+  assert.match(callback, /supabase\.auth\.signOut\(\)/);
+  assert.match(policy, /candidate\.provider === "google"/);
+  assert.match(policy, /email\.endsWith\(`@\$\{normalizedDomain\}`\)/);
+  assert.match(policy, /emailVerified/);
+  assert.match(admin, /onConflictDoNothing/);
+});

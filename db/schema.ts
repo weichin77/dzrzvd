@@ -189,6 +189,30 @@ export const appAdmin = privateSchema.table("app_admin", {
   ...auditColumns,
 });
 
+export const excelImport = privateSchema.table(
+  "excel_import",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => appAdmin.userId),
+    sourceFilename: text("source_filename").notNull(),
+    status: text("status").notNull(),
+    rowCount: integer("row_count").default(0).notNull(),
+    includedCount: integer("included_count").default(0).notNull(),
+    excludedCount: integer("excluded_count").default(0).notNull(),
+    categoryCount: integer("category_count").default(0).notNull(),
+    missingTranslationSegments: text("missing_translation_segments")
+      .array()
+      .default([])
+      .notNull(),
+    storagePath: text("storage_path"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("excel_import_created_idx").on(table.createdAt)],
+);
+
 export const productFilterOverride = privateSchema.table(
   "product_filter_override",
   {

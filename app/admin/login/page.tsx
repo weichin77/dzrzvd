@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
         <p className={styles.eyebrow}>OPERATOR ACCESS</p>
         <h1>目錄管理登入</h1>
         <p className={styles.intro}>
-          此介面僅供受邀的 DZRZVD 管理者查看同步狀態與處理商品例外。
+          gold-tank.com Google Workspace 成員可直接登入；受邀帳號亦可使用密碼作為備援。
         </p>
         <Suspense fallback={<p>載入登入介面…</p>}>
           <LoginForm />

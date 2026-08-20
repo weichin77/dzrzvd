@@ -46,7 +46,7 @@ export default async function ProductCategoryPage({ params }: PageProps) {
           <p className={styles.heroEyebrow}>DZRZVD COLLECTION · CATEGORY</p>
           <h1>{category?.name || "商品分類"}</h1>
           <p>
-            僅顯示目前在 Shopee 正常販售且確認有庫存的 DZRZVD 商品。
+            僅顯示經管理者匯入或同步確認的 DZRZVD 商品。
           </p>
         </div>
       </section>

@@ -6,6 +6,7 @@ import { unstable_cache } from "next/cache";
 import { getDb } from "@/db";
 import {
   categoryPresentation,
+  excelImport,
   shopeeCategory,
   shopeeProduct,
   syncRun,
@@ -23,7 +24,7 @@ function defaultCategorySlug(categoryId: bigint): string {
 
 async function readCatalogOverview(): Promise<CatalogOverview> {
   const db = getDb();
-  const [rows, latestRuns] = await Promise.all([
+  const [rows, latestRuns, latestImports] = await Promise.all([
     db
       .select({
         itemId: shopeeProduct.itemId,
@@ -51,7 +52,10 @@ async function readCatalogOverview(): Promise<CatalogOverview> {
           eq(shopeeProduct.isDzrzvd, true),
           eq(shopeeProduct.status, "NORMAL"),
           isNull(shopeeProduct.inactiveAt),
-          gt(shopeeProduct.availableStock, 0),
+          or(
+            gt(shopeeProduct.availableStock, 0),
+            eq(shopeeProduct.matchMethod, "manual_excel_import"),
+          ),
           or(
             isNull(categoryPresentation.visible),
             eq(categoryPresentation.visible, true),
@@ -69,6 +73,12 @@ async function readCatalogOverview(): Promise<CatalogOverview> {
       .from(syncRun)
       .where(eq(syncRun.status, "succeeded"))
       .orderBy(desc(syncRun.finishedAt))
+      .limit(1),
+    db
+      .select({ createdAt: excelImport.createdAt })
+      .from(excelImport)
+      .where(eq(excelImport.status, "succeeded"))
+      .orderBy(desc(excelImport.createdAt))
       .limit(1),
   ]);
 
@@ -99,9 +109,15 @@ async function readCatalogOverview(): Promise<CatalogOverview> {
 
   const groupedCategories = Array.from(categories.values());
 
+  const lastUpdatedAt = [
+    latestRuns[0]?.finishedAt,
+    latestImports[0]?.createdAt,
+  ].filter((value): value is Date => Boolean(value))
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+
   return {
     status: groupedCategories.length ? "ready" : "empty",
-    lastUpdatedAt: latestRuns[0]?.finishedAt?.toISOString() ?? null,
+    lastUpdatedAt: lastUpdatedAt?.toISOString() ?? null,
     categories: groupedCategories,
   };
 }

@@ -37,7 +37,7 @@ export default async function ProductsPage() {
           <h1>依機能分類，<br />找到自在裝備。</h1>
           <div className={styles.heroMeta}>
             <p>
-              只收錄目前在 Shopee 正常販售且確認有庫存的 DZRZVD 商品。
+              只收錄經管理者匯入或同步確認的 DZRZVD 商品。
               選定款式後，將前往 kuSport Shopee 商店完成購買。
             </p>
             <span>更新時間：{formatUpdatedAt(overview.lastUpdatedAt)}</span>

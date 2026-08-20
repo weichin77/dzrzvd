@@ -11,10 +11,12 @@
     "start": "next start",
     "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs && node scripts/smoke-test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "catalog:sync": "node --experimental-strip-types scripts/build-catalog.mjs",
     "db:reset": "npx supabase db reset",
     "db:push": "npx supabase db push"
   },
   "dependencies": {
+    "@e965/xlsx": "^0.20.3",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.111.0",
     "drizzle-orm": "0.45.2",

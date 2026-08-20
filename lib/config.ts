@@ -7,6 +7,10 @@ type PublicSupabaseConfig = {
   publishableKey: string;
 };
 
+type SecretSupabaseConfig = PublicSupabaseConfig & {
+  secretKey: string;
+};
+
 type ShopeeConfig = {
   partnerId: number;
   partnerKey: string;
@@ -126,6 +130,21 @@ export function getSupabasePublicConfig(): PublicSupabaseConfig {
   return {
     url,
     publishableKey,
+  };
+}
+
+export function hasSupabaseSecretConfig(): boolean {
+  return Boolean(
+    process.env.SUPABASE_SECRET_KEY?.trim() && hasSupabasePublicConfig(),
+  );
+}
+
+export function getSupabaseSecretConfig(): SecretSupabaseConfig {
+  const publicConfig = getSupabasePublicConfig();
+
+  return {
+    ...publicConfig,
+    secretKey: readRequired("SUPABASE_SECRET_KEY"),
   };
 }
 

@@ -72,9 +72,14 @@ export default async function ShopeeCatalogAdminPage({
           <h1>Shopee 目錄管理</h1>
           <p>查看授權與同步狀態，必要時執行安全的人工同步。</p>
         </div>
-        <form action={signOutAction}>
-          <button className={styles.secondaryButton} type="submit">登出</button>
-        </form>
+        <div className={styles.actionButtons}>
+          <Link className={styles.secondaryButton} href="/admin/catalog-upload">
+            上傳 Excel 目錄
+          </Link>
+          <form action={signOutAction}>
+            <button className={styles.secondaryButton} type="submit">登出</button>
+          </form>
+        </div>
       </section>
 
       {query.authorized === "1" ? (
