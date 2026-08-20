@@ -72,3 +72,24 @@ test("preserves numeric Shopee IDs and accepts numeric-only category IDs", () =>
   assert.equal(result.categories[0].name, "分類 100017");
   assert.equal(result.categories[0].products[0].itemId, "28482675953");
 });
+
+test("accepts current Shopee CDN URLs and skips export instruction rows", () => {
+  const result = parseShopeeExport(workbookBuffer([
+    ["et_title_product_id", "et_title_product_name", "ps_item_cover_image", "et_title_product_category"],
+    ["media_info", "0", '{"search_condition":{}}', ""],
+    ["商品ID", "商品名稱", "主商品圖片", "商品分類"],
+    ["164", "164", "必填", "164"],
+    ["164", "164", "請輸入圖片的 URL", "164"],
+    [
+      "23411317645",
+      "【零碼出清】DZRZVD杜戛地女款兩件式外套",
+      "https://s-cf-tw.shopeesz.com/file/tw-11134207-example",
+      "100367 - Women Clothes/Jackets, Coats & Vests/Winter Jackets & Coats",
+    ],
+  ]));
+
+  assert.equal(result.stats.totalRows, 3);
+  assert.equal(result.stats.included, 1);
+  assert.equal(result.stats.excludedMissingField, 2);
+  assert.equal(result.categories[0].products[0].itemId, "23411317645");
+});

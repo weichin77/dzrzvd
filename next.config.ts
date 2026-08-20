@@ -31,6 +31,11 @@ const nextConfig: NextConfig = {
         hostname: "**.shopee.tw",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "**.shopeesz.com",
+        pathname: "/**",
+      },
     ],
   },
 };

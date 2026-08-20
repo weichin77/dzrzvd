@@ -172,7 +172,8 @@ function parseImageUrl(value: unknown): string | null {
     const url = new URL(candidate);
     const allowedHost = ALLOWED_IMAGE_HOSTS.has(url.hostname) ||
       url.hostname.endsWith(".img.susercontent.com") ||
-      url.hostname.endsWith(".shopee.tw");
+      url.hostname.endsWith(".shopee.tw") ||
+      url.hostname.endsWith(".shopeesz.com");
     return url.protocol === "https:" && allowedHost
       ? url.toString()
       : null;
