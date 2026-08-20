@@ -80,7 +80,11 @@ export async function uploadCatalogAction(formData: FormData): Promise<never> {
 
     if (parsed.stats.included === 0) {
       throw new OperatorImportError(
-        "檔案中沒有可匯入的 DZRZVD／杜戛地商品；現有目錄未變更。",
+        `檔案中沒有可匯入的 DZRZVD／杜戛地商品。` +
+          `共讀取 ${parsed.stats.totalRows} 列；` +
+          `品牌名稱不符 ${parsed.stats.excludedNotDzrzvd} 列；` +
+          `必要欄位或格式不完整 ${parsed.stats.excludedMissingField} 列。` +
+          "現有目錄未變更。",
       );
     }
 
@@ -115,7 +119,11 @@ export async function uploadCatalogAction(formData: FormData): Promise<never> {
     revalidatePath("/admin/catalog-upload");
   } catch (error) {
     const errorMessage = operatorMessage(error);
-    console.error("Catalog Excel import failed", { importId, error });
+    console.error("Catalog Excel import failed", {
+      importId,
+      error,
+      stats: parsed?.stats,
+    });
 
     try {
       await recordFailedExcelImport({

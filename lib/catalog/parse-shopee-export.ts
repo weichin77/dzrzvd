@@ -115,7 +115,9 @@ function normalizedHeader(value: unknown): string {
 function workbookRows(sheet: WorkSheet): unknown[][] {
   return utils.sheet_to_json<unknown[]>(sheet, {
     header: 1,
-    raw: false,
+    // Shopee IDs are numeric cells. Reading formatted display values can turn
+    // them into rounded scientific notation and destroy the original ID.
+    raw: true,
     defval: "",
     blankrows: false,
   });
@@ -142,6 +144,12 @@ function findHeaderRow(rows: unknown[][]): {
 }
 
 function parsePositiveId(value: unknown): string | null {
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value) && value > 0
+      ? BigInt(value).toString()
+      : null;
+  }
+
   const normalized = cellText(value).replace(/,/g, "");
 
   if (!/^\d+$/.test(normalized)) {
@@ -157,11 +165,15 @@ function parsePositiveId(value: unknown): string | null {
 }
 
 function parseImageUrl(value: unknown): string | null {
-  const candidate = cellText(value);
+  const text = cellText(value);
+  const candidate = text.match(/https:\/\/[^\s,;"']+/i)?.[0] ?? text;
 
   try {
     const url = new URL(candidate);
-    return url.protocol === "https:" && ALLOWED_IMAGE_HOSTS.has(url.hostname)
+    const allowedHost = ALLOWED_IMAGE_HOSTS.has(url.hostname) ||
+      url.hostname.endsWith(".img.susercontent.com") ||
+      url.hostname.endsWith(".shopee.tw");
+    return url.protocol === "https:" && allowedHost
       ? url.toString()
       : null;
   } catch {
@@ -185,20 +197,36 @@ function parseCategory(value: unknown): {
   missingTranslations: string[];
 } | null {
   const raw = cellText(value);
-  const match = raw.match(/^(\d+)\s*-\s*(.+)$/);
+  const prefixed = raw.match(/^(\d+)\s*-\s*(.+)$/);
+  const numericOnly = raw.match(/^\d+$/);
+  const parenthesized = raw.match(/^(.+?)\s*\((\d+)\)\s*$/);
 
-  if (!match) {
+  if (!prefixed && !numericOnly && !parenthesized) {
     return null;
   }
 
-  const categoryId = parsePositiveId(match[1]);
-  const segments = match[2]
+  const categoryId = parsePositiveId(
+    prefixed?.[1] ?? numericOnly?.[0] ?? parenthesized?.[2],
+  );
+  const path = prefixed?.[2] ?? parenthesized?.[1] ?? "";
+  const segments = path
     .split(/\s*(?:\/|／|>|＞)\s*/)
     .map((segment) => segment.trim())
     .filter(Boolean);
 
-  if (!categoryId || !segments.length) {
+  if (!categoryId) {
     return null;
+  }
+
+  if (!segments.length) {
+    const fallback = `分類 ${categoryId}`;
+    return {
+      categoryId,
+      originalName: fallback,
+      breadcrumb: [fallback],
+      displayName: fallback,
+      missingTranslations: [],
+    };
   }
 
   const translated = segments.map(translateSegment);

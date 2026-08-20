@@ -60,3 +60,15 @@ test("rejects data URLs and malformed category values before inclusion", () => {
   assert.equal(result.stats.included, 0);
   assert.equal(result.stats.excludedMissingField, 1);
 });
+
+test("preserves numeric Shopee IDs and accepts numeric-only category IDs", () => {
+  const result = parseShopeeExport(workbookBuffer([
+    ["商品ID", "商品名稱", "主商品圖片", "商品分類"],
+    [28482675953, "DZRZVD杜戛地防曬外套", "https://down-bs-sg.img.susercontent.com/file/a", 100017],
+  ]));
+
+  assert.equal(result.stats.included, 1);
+  assert.equal(result.categories[0].categoryId, "100017");
+  assert.equal(result.categories[0].name, "分類 100017");
+  assert.equal(result.categories[0].products[0].itemId, "28482675953");
+});
