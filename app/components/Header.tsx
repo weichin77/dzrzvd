@@ -6,6 +6,7 @@ import { useState } from "react";
 
 const links = [
   { href: "/", label: "首頁" },
+  { href: "/products", label: "商品" },
   { href: "/about", label: "關於我們" },
   { href: "/location", label: "地點" },
 ];
@@ -28,7 +29,6 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
-          <a className="shop-link" href="https://shopee.tw/shop/16630682" target="_blank" rel="noreferrer">前往商店 ↗</a>
         </nav>
       </div>
     </header>

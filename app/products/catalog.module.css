@@ -1,6 +1,6 @@
 .page {
   min-height: 100svh;
-  background: #f7f6f1;
+  background: var(--paper);
   color: #18221b;
 }
 
@@ -13,8 +13,9 @@
   overflow: hidden;
   padding: 170px 0 76px;
   background:
-    radial-gradient(circle at 78% 35%, rgba(169, 180, 155, 0.26), transparent 30%),
-    linear-gradient(125deg, #102017 0%, #244732 68%, #1b3627 100%);
+    linear-gradient(90deg, rgba(8, 22, 15, 0.78) 0%, rgba(8, 22, 15, 0.38) 48%, rgba(8, 22, 15, 0.1) 100%),
+    linear-gradient(0deg, rgba(8, 22, 15, 0.28), transparent 55%),
+    url("/images/hero.jpg") center 54% / cover;
   color: white;
 }
 
