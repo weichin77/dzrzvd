@@ -13,6 +13,11 @@ const notoSans = Noto_Sans_TC({
 export const metadata: Metadata = {
   title: { default: "DZRZVD 杜戛地｜戶外機能服飾", template: "%s｜DZRZVD 杜戛地" },
   description: "杜戛地 DZRZVD 結合機能設計與平實價格，提供防風、防水、保暖、防曬與排汗戶外服飾。",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
