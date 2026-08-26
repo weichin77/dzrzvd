@@ -34,7 +34,7 @@ export default async function ProductsPage() {
       <section className={styles.catalogHero}>
         <div className={styles.heroInner}>
           <p className={styles.heroEyebrow}>DZRZVD COLLECTION · SHOPEE</p>
-          <h1>依機能分類，<br />找到自在裝備。</h1>
+          <h1>依機能分類，<br />找到所需裝備。</h1>
           <div className={styles.heroMeta}>
             <p>
               只收錄經管理者匯入或同步確認的 DZRZVD 商品。

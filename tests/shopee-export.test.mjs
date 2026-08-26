@@ -7,6 +7,7 @@ import {
   parseShopeeExport,
   ShopeeExportValidationError,
 } from "../lib/catalog/parse-shopee-export.ts";
+import { translateCategoryPath } from "../lib/catalog/category-translations.ts";
 
 function workbookBuffer(rows) {
   const workbook = utils.book_new();
@@ -32,11 +33,62 @@ test("parses, classifies, translates, and de-duplicates Shopee export rows", () 
     duplicates: 1,
   });
   assert.equal(result.categories.length, 2);
-  assert.deepEqual(result.missingTranslations, ["Trail Clothing"]);
+  assert.deepEqual(result.missingTranslations, []);
 
   const men = result.categories.find((category) => category.categoryId === "101");
   assert.equal(men?.name, "男裝／上衣／夾克");
   assert.equal(men?.products[0].name, "DZRZVD 防風外套 新版");
+
+  const trail = result.categories.find((category) => category.categoryId === "103");
+  assert.equal(trail?.name, "運動與戶外／戶外休閒／登山服飾");
+});
+
+test("translates every category segment currently used by the Taiwan catalog", () => {
+  const result = parseShopeeExport(workbookBuffer([
+    ["商品ID", "商品名稱", "主商品圖片", "商品分類"],
+    ["2001", "DZRZVD 後背包", "https://down-tw.img.susercontent.com/file/a", "100564 - Men Bags/Backpacks"],
+    ["2002", "DZRZVD 冬季背心", "https://down-tw.img.susercontent.com/file/b", "100371 - Women Clothes/Jackets, Coats & Vests/Vests"],
+    ["2003", "DZRZVD 冬季外套", "https://down-tw.img.susercontent.com/file/c", "100367 - Women Clothes/Jackets, Coats & Vests/Winter Jackets & Coats"],
+    ["2004", "DZRZVD 攀岩裝備", "https://down-tw.img.susercontent.com/file/d", "101274 - Sports & Outdoors/Sports & Outdoor Recreation Equipments/Rock Climbing"],
+    ["2005", "DZRZVD 運動長褲", "https://down-tw.img.susercontent.com/file/e", "101313 - Sports & Outdoors/Sports & Outdoor Apparels/Bottoms"],
+    ["2006", "DZRZVD 運動套裝", "https://down-tw.img.susercontent.com/file/f", "101309 - Sports & Outdoors/Sports & Outdoor Apparels/Sets"],
+  ]));
+
+  assert.deepEqual(result.missingTranslations, []);
+  assert.deepEqual(
+    result.categories.map((category) => category.name),
+    [
+      "女裝／夾克、外套與背心／冬季夾克與外套",
+      "女裝／夾克、外套與背心／背心",
+      "男包／後背包",
+      "運動與戶外／運動與戶外休閒用品／攀岩",
+      "運動與戶外／運動與戶外服飾／下身服飾",
+      "運動與戶外／運動與戶外服飾／套裝",
+    ],
+  );
+});
+
+test("translates existing mixed-language catalog labels at display time", () => {
+  assert.deepEqual(
+    [
+      "Men Bags／Backpacks",
+      "女裝／Jackets, Coats & Vests／Others",
+      "女裝／Jackets, Coats & Vests／Vests",
+      "男裝／Jackets, Coats & Vests／Winter Jackets & Coats",
+      "運動與戶外／Sports & Outdoor Recreation Equipments／Rock Climbing",
+      "運動與戶外／運動與戶外服飾／Bottoms",
+      "運動與戶外／運動與戶外服飾／Sets",
+    ].map(translateCategoryPath),
+    [
+      "男包／後背包",
+      "女裝／夾克、外套與背心／其他",
+      "女裝／夾克、外套與背心／背心",
+      "男裝／夾克、外套與背心／冬季夾克與外套",
+      "運動與戶外／運動與戶外休閒用品／攀岩",
+      "運動與戶外／運動與戶外服飾／下身服飾",
+      "運動與戶外／運動與戶外服飾／套裝",
+    ],
+  );
 });
 
 test("requires all four expected Chinese headers", () => {

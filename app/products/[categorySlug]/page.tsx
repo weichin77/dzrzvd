@@ -43,7 +43,7 @@ export default async function ProductCategoryPage({ params }: PageProps) {
     <main className={styles.page}>
       <section className={styles.categoryHero}>
         <div className={styles.heroInner}>
-          <p className={styles.heroEyebrow}>DZRZVD COLLECTION · CATEGORY</p>
+          <p className={styles.heroEyebrow}>DZRZVD 系列 · 商品分類</p>
           <h1>{category?.name || "商品分類"}</h1>
           <p>
             僅顯示經管理者匯入或同步確認的 DZRZVD 商品。

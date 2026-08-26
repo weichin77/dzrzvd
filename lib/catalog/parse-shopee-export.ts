@@ -1,6 +1,7 @@
 import { read, utils, type WorkSheet } from "@e965/xlsx";
 
 import { classifyDzrzvdTitle } from "./classifier.ts";
+import { translateCategorySegment } from "./category-translations.ts";
 
 const EXPECTED_HEADERS = ["商品ID", "商品名稱", "主商品圖片", "商品分類"] as const;
 const MAX_WORKSHEET_ROWS = 20_000;
@@ -8,41 +9,6 @@ const ALLOWED_IMAGE_HOSTS = new Set([
   "down-tw.img.susercontent.com",
   "cf.shopee.tw",
 ]);
-
-const CATEGORY_TRANSLATIONS: Readonly<Record<string, string>> = {
-  "automotive": "汽機車零件百貨",
-  "baby & kids fashion": "嬰幼童與童裝",
-  "bags & accessories": "包包精品",
-  "camping & hiking": "露營與登山",
-  "coats, jackets & vests": "外套、夾克與背心",
-  "computers & accessories": "電腦及周邊",
-  "fashion accessories": "時尚配件",
-  "food & beverages": "美食與飲品",
-  "health & beauty": "美妝保健",
-  "hobbies & books": "興趣與書籍",
-  "home & living": "居家生活",
-  "home appliances": "家電",
-  "hoodies & sweatshirts": "帽T與大學T",
-  "jackets": "夾克",
-  "men clothes": "男裝",
-  "men shoes": "男鞋",
-  "mobiles & gadgets": "手機平板與周邊",
-  "outdoor recreation": "戶外休閒",
-  "pants": "長褲",
-  "pets": "寵物",
-  "shirts": "襯衫",
-  "shorts": "短褲",
-  "sports & outdoor apparels": "運動與戶外服飾",
-  "sports & outdoors": "運動與戶外",
-  "sportswear": "運動服飾",
-  "sweaters & cardigans": "毛衣與針織外套",
-  "t-shirts": "T恤",
-  "tickets & vouchers": "票券",
-  "tops": "上衣",
-  "video games": "電玩遊戲",
-  "women clothes": "女裝",
-  "women shoes": "女鞋",
-};
 
 export type ParsedShopeeProduct = {
   itemId: string;
@@ -184,7 +150,7 @@ function parseImageUrl(value: unknown): string | null {
 
 function translateSegment(segment: string): { value: string; missing: boolean } {
   const normalized = segment.normalize("NFKC").replace(/\s+/g, " ").trim();
-  const translation = CATEGORY_TRANSLATIONS[normalized.toLocaleLowerCase("en")];
+  const translation = translateCategorySegment(normalized);
   return translation
     ? { value: translation, missing: false }
     : { value: normalized, missing: true };

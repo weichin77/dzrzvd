@@ -22,7 +22,7 @@ export default function CategorySection({
     >
       <header className={styles.sectionHeader}>
         <div>
-          <p className={styles.sectionEyebrow}>SHOPEE CATEGORY</p>
+          <p className={styles.sectionEyebrow}>SHOPEE 商品分類</p>
           <Heading id={`category-${category.categoryId}`}>
             {category.name}
           </Heading>

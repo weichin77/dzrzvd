@@ -12,6 +12,7 @@ import {
   syncRun,
 } from "@/db/schema";
 import { hasDatabaseConfig } from "@/lib/config";
+import { translateCategoryPath } from "@/lib/catalog/category-translations";
 import type {
   CatalogCategory,
   CatalogOverview,
@@ -91,7 +92,9 @@ async function readCatalogOverview(): Promise<CatalogOverview> {
       slug:
         row.categorySlug ||
         (row.categoryId ? defaultCategorySlug(row.categoryId) : "other"),
-      name: row.categoryLabel || row.categoryName || "其他",
+      name: translateCategoryPath(
+        row.categoryLabel || row.categoryName || "其他",
+      ),
       description: row.categoryDescription,
       products: [],
     };
@@ -124,7 +127,7 @@ async function readCatalogOverview(): Promise<CatalogOverview> {
 
 const readCachedCatalogOverview = unstable_cache(
   readCatalogOverview,
-  ["shopee-catalog-overview-v1"],
+  ["shopee-catalog-overview-v2"],
   { revalidate: 3600, tags: ["shopee-catalog"] },
 );
 
